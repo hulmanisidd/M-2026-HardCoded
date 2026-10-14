@@ -3,7 +3,7 @@ from contracts import RiskAssessment
 from backend.remediation.candidates import generate_candidates
 from backend.remediation.explanations import explain_assessment, explain_fix_set
 from backend.remediation.optimizer import greedy_select
-from test_p4_simulation import build, find_paths
+from backend.remediation.tests.p4_helpers import build, find_paths
 
 def test_scored_assessment_shows_formula_and_factors():
     a = RiskAssessment(

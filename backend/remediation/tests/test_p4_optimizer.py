@@ -1,6 +1,6 @@
 from backend.remediation.candidates import generate_candidates
 from backend.remediation.optimizer import OptimizerConstraints, greedy_select, residual_risk
-from test_p4_simulation import build, cand_for, find_paths
+from backend.remediation.tests.p4_helpers import build, cand_for, find_paths
 import pytest
 
 from backend.remediation.optimizer import recommend_fixes
@@ -9,7 +9,7 @@ from contracts.risk import RiskAssessment
 from datetime import datetime, timezone
 from backend.remediation.simulation import recommend
 from contracts import EdgeStatus, Entity, GraphSnapshot, NodeType, RelationType, Relationship, Criticality
-from test_p4_simulation import NOW
+from backend.remediation.tests.p4_helpers import NOW
 def test_no_fixes_leaves_all_three_paths():
     s = build()
     r = residual_risk([], s, find_paths)
