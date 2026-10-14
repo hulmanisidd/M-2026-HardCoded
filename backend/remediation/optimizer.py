@@ -129,6 +129,9 @@ def greedy_select(
     ]
     covered = {e for c in chosen for e in c.plan.removed_edge_ids}
     unmet = sorted(constraints.mandatory_edge_ids - covered)
+    rejected_edge_ids = {e for c in candidates if not is_allowed(c, constraints) for e in c.plan.removed_edge_ids}
+    unmet_rejected = [e for e in unmet if e in rejected_edge_ids]
+    unmet_missing = [e for e in unmet if e not in rejected_edge_ids]
     total_cost = sum(c.cost for c in chosen)
     mandatory_count = len(chosen)
     mandatory_cost = total_cost
@@ -169,8 +172,12 @@ def greedy_select(
         assumptions.append(
             f"{len(baseline.unknown_path_ids)} path(s) have unknown risk and are excluded from the optimized total."
         )
-    if unmet:
-        assumptions.append(f"Mandatory edges with no matching candidate: {unmet}")
+    if unmet_missing:
+        assumptions.append(f"Mandatory edges with no matching candidate: {unmet_missing}")
+    if unmet_rejected:
+        assumptions.append(
+            f"Mandatory edges rejected by constraints (forbidden or over the disruption cap), not removed: {unmet_rejected}"
+        )
     if constraints.max_total_cost is not None and mandatory_cost > constraints.max_total_cost:
         assumptions.append(
             f"Mandatory fixes exceeded max_total_cost ({mandatory_cost:.2f} > {constraints.max_total_cost:.2f}); they were kept anyway."

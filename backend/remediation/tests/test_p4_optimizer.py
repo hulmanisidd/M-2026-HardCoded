@@ -139,6 +139,25 @@ def test_no_over_cap_line_when_mandatory_fixes_fit_the_caps():
     assert not any("Mandatory fixes exceeded" in a for a in r.assumptions)
 
 
+def test_mandatory_edge_rejected_by_constraints_is_reported_as_rejected():
+    s = build()
+    must = cand_for(s, "u", "r3")
+    edges = frozenset(must.plan.removed_edge_ids)
+    cons = OptimizerConstraints(mandatory_edge_ids=edges, forbidden_edge_ids=edges)
+    r = greedy_select(generate_candidates(find_paths(s), s), s, find_paths, cons)
+    assert must.candidate_id not in [c.candidate_id for c in r.chosen]
+    assert any("rejected by constraints" in a for a in r.assumptions)
+    assert not any("no matching candidate" in a for a in r.assumptions)
+
+
+def test_mandatory_edge_with_no_candidate_is_reported_as_no_candidate():
+    s = build()
+    cons = OptimizerConstraints(mandatory_edge_ids=frozenset({"not-an-edge"}))
+    r = greedy_select(generate_candidates(find_paths(s), s), s, find_paths, cons)
+    assert any("no matching candidate" in a for a in r.assumptions)
+    assert not any("rejected by constraints" in a for a in r.assumptions)
+
+
 def recs(constraints=None):
     s = build()
     p = find_paths(s)
