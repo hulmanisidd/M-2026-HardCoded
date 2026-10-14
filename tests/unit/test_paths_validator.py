@@ -29,3 +29,12 @@ def test_blocked_beats_conditional():
 def test_empty_is_rejected():
     with pytest.raises(ValueError):
         combine_statuses([])
+
+def test_unknown_edge_status_makes_path_conditional():
+    g = build_graph({"dev>backup": "unknown"})
+    ids = [edge_id(g, "dev", "backup"), edge_id(g, "backup", "bucket")]
+
+    status, results = validate_path(g, ids, {})
+
+    assert status is Feasibility.CONDITIONAL
+    assert results[0].reason == "edge_status_unknown"

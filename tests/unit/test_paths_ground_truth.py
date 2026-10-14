@@ -91,3 +91,23 @@ def test_only_unknown_entry_yields_no_paths_but_says_why():
     res = discover_paths(graph, ["user:ghost"], FIX["targets"])
     assert res.paths == ()
     assert res.stats.unknown_entry_ids == ("user:ghost",)
+
+def test_paths_using_stale_app_prod_db_edge_returns_two_conditional_paths():
+    from backend.paths import paths_using_edge
+
+    graph = build_fixture_graph(FIX)
+    result = discover_paths(graph, FIX["entries"], FIX["targets"], PathOptions(max_depth=4))
+    stale_edge_id = next(
+        edge.edge_id
+        for edge in graph.edges
+        if edge.source_id == "app" and edge.target_id == "prod-db"
+    )
+
+    affected = paths_using_edge(result.paths, stale_edge_id)
+
+    assert len(affected) == 2
+    assert {p.node_ids for p in affected} == {
+        ("alice", "app", "prod-db"),
+        ("ci-bot", "deploy", "app", "prod-db"),
+    }
+    assert all(p.feasibility_status.value == "conditional" for p in affected)
