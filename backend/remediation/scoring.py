@@ -44,7 +44,7 @@ class RiskConfig:
         EdgeStatus.STALE: 0.4,
     })
     per_hop_decay: float = 0.15       # each extra transition makes the route harder
-    min_length_factor: float = 0.2    # floor so long paths never reach zero
+    min_length_factor: float = 0.2    # floor on the length factor only; later multipliers can push likelihood below it
     constrained_factor: float = 0.7   # an edge with conditions is harder to use
 
 
