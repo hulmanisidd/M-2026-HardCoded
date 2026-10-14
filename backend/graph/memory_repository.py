@@ -67,12 +67,20 @@ class InMemoryGraphRepository(GraphRepository):
         kind = ChangeKind.ENTITY_ADDED if existing is None else ChangeKind.ENTITY_UPDATED
         return self._change(kind, entity.entity_id, True)
 
-    def upsert_edge(self, edge: Relationship) -> GraphChange:
+    def upsert_edge(self, edge: Relationship, *, reinstate: bool = False) -> GraphChange:
         for endpoint in (edge.source_id, edge.target_id):
             if endpoint not in self._entities:
                 raise ValueError(f"unknown entity {endpoint!r} for edge {edge.edge_id}")
         existing = self._edges.get(edge.edge_id)
         if existing == edge:
+            return self._change(ChangeKind.EDGE_UPDATED, edge.edge_id, False)
+        if (
+            existing is not None
+            and existing.status == EdgeStatus.INVALIDATED
+            and edge.status != EdgeStatus.INVALIDATED
+            and not reinstate
+        ):
+            # Replay guard: an invalidated edge stays invalidated.
             return self._change(ChangeKind.EDGE_UPDATED, edge.edge_id, False)
         self._edges[edge.edge_id] = edge
         kind = ChangeKind.EDGE_ADDED if existing is None else ChangeKind.EDGE_UPDATED

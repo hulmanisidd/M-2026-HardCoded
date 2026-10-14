@@ -12,9 +12,13 @@ class GraphRepository(ABC):
         """Insert or replace by entity_id. Identical replay -> changed=False."""
 
     @abstractmethod
-    def upsert_edge(self, edge: Relationship) -> GraphChange:
+    def upsert_edge(self, edge: Relationship, *, reinstate: bool = False) -> GraphChange:
         """Insert or replace by edge_id. Both endpoints must already exist
-        (raise ValueError otherwise). Identical replay -> changed=False."""
+        (raise ValueError otherwise). Identical replay -> changed=False.
+
+        An INVALIDATED edge is never overwritten by a non-invalidated edge
+        unless reinstate=True; the write is ignored (changed=False). Only
+        pass reinstate=True for a fresh observation, never for a replay."""
 
     @abstractmethod
     def invalidate_edge(self, edge_id: str) -> GraphChange:
