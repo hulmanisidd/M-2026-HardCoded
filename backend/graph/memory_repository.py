@@ -169,8 +169,8 @@ class InMemoryGraphRepository(GraphRepository):
         else:
             if observed_at is not None:
                 self._observed_at[eid] = observed_at
-            if edge.status != EdgeStatus.UNKNOWN:
-                self._unknown_since.pop(eid, None)
+            if edge.status != EdgeStatus.UNKNOWN and observed_at is not None:
+                self._unknown_since.pop(eid, None)  # only a newer observation clears UNKNOWN
         kind = ChangeKind.EDGE_ADDED if existing is None else ChangeKind.EDGE_UPDATED
         return self._change(kind, eid, True)
 
@@ -201,6 +201,8 @@ class InMemoryGraphRepository(GraphRepository):
             source = self._entities.get(edge.source_id)
             if source is None or source.account_id != scope.account_id:
                 continue
+            if eid not in self._observed_at:
+                continue  # never observed (seed / direct write): freshness not judged
             latest = self._latest_event_time(eid)
             if latest is not None and at <= latest:
                 continue  # stale failure report for this edge
