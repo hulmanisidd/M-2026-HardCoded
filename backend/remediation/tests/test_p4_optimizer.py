@@ -7,7 +7,7 @@ from backend.remediation.optimizer import recommend_fixes
 from backend.remediation.scoring import rank_paths
 from contracts.risk import RiskAssessment
 from datetime import datetime, timezone
-
+from backend.remediation.simulation import recommend
 from contracts import EdgeStatus, Entity, GraphSnapshot, NodeType, RelationType, Relationship, Criticality
 from test_p4_simulation import NOW
 def test_no_fixes_leaves_all_three_paths():
@@ -172,6 +172,32 @@ def test_optimizer_states_unknown_paths_are_excluded_from_totals():
 def test_fix_on_unknown_path_is_not_credited_with_risk_reduction():
     s = build_with_unknown_edge()
     p = find_paths(s)
-    r = recommend_fixes(p, rank_paths(p, s), s, find_paths=find_paths)
-    assert all(x.estimated_risk_reduction is not None for x in r)
-    assert r, "known-risk paths should still produce recommendations"
+    a = rank_paths(p, s)
+    unknown_ids = {x.path_id for x in a if x.risk_score is None}
+    known = {x.path_id: x.risk_score for x in a if x.risk_score is not None}
+    assert len(unknown_ids) == 1 and len(known) == 2
+
+    recs = recommend_fixes(p, a, s, find_paths=find_paths)
+    assert len(recs) == 1, "only the fix on known-risk paths should be chosen"
+    r = recs[0]
+
+    # the unknown path is never listed as blocked-and-credited, and stays residual
+    assert not (unknown_ids & set(r.expected_blocked_path_ids))
+    assert unknown_ids <= set(r.residual_path_ids)
+
+    # reduction is exactly blocked known risk / known total
+    expected = sum(known[i] for i in r.expected_blocked_path_ids) / sum(known.values())
+    assert r.estimated_risk_reduction == pytest.approx(expected)
+    assert r.estimated_risk_reduction == pytest.approx(1.0)
+
+    # the exclusion is stated on the recommendation itself
+    assert any("excluded from risk_reduction" in t for t in r.assumptions)
+
+def test_fix_blocking_only_unknown_path_gets_zero_reduction_not_credit():
+    s = build_with_unknown_edge()
+    r = recommend(cand_for(s, "u", "r3"), s, find_paths)
+    assert len(r.expected_blocked_path_ids) == 1
+    assert len(r.residual_path_ids) == 2
+    assert r.estimated_risk_reduction == pytest.approx(0.0)
+    assert r.estimated_risk_reduction is not None
+    assert any("excluded from risk_reduction" in t for t in r.assumptions)
