@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from contracts import RiskAssessment
+from contracts import RemediationRecommendation, RiskAssessment
 
 if TYPE_CHECKING:
     from backend.remediation.optimizer import OptimizerResult
@@ -68,4 +68,21 @@ def explain_fix_set(result: OptimizerResult) -> str:
     if result.assumptions:
         lines.append("Assumptions:")
         lines.extend(f"  - {a}" for a in result.assumptions)
+    return "\n".join(lines)
+
+
+def explain_recommendation(r: RemediationRecommendation) -> str:
+    lines = [
+        f"Recommendation {r.recommendation_id} (graph {r.graph_version}) "
+        f"[{_val(r.verification_status)}]",
+        f"Action: {_val(r.action_type)} on {r.target_id}",
+        f"Estimated cost: {_fmt(r.estimated_cost)} (0-1 assumption)",
+        f"Simulated alone: blocks {len(r.expected_blocked_path_ids)} path(s), "
+        f"{len(r.residual_path_ids)} path(s) remain",
+        f"Estimated risk reduction: {_fmt(r.estimated_risk_reduction)} "
+        f"(fraction of known baseline route risk blocked, 0-1; not a probability)",
+    ]
+    if r.assumptions:
+        lines.append("Assumptions:")
+        lines.extend(f"  - {a}" for a in r.assumptions)
     return "\n".join(lines)

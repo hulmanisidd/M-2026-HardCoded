@@ -41,3 +41,43 @@ def test_fix_set_explanation_states_totals_assumptions_and_shared_cause():
     assert "shared root cause" in out
     assert "not guaranteed globally optimal" in out
     assert "Paths still present after fixes: 0" in out
+
+def test_explain_recommendation_describes_fraction_and_unknowns():
+    from contracts import RemediationRecommendation
+    from backend.remediation.explanations import explain_recommendation
+
+    full = RemediationRecommendation(
+        recommendation_id="rec_test",
+        graph_version="v1",
+        action_type="restrict_role_trust",
+        target_id="u",
+        estimated_cost=0.3,
+        expected_blocked_path_ids=["p1", "p2"],
+        residual_path_ids=["p3"],
+        estimated_risk_reduction=0.6,
+        assumptions=["example assumption"],
+        verification_status="SIMULATED",
+    )
+    text = explain_recommendation(full)
+    lines = text.splitlines()
+
+    assert "rec_test" in lines[0] and "[SIMULATED]" in lines[0]
+    assert "Action: restrict_role_trust on u" in text
+    assert "Estimated cost: 0.30" in text
+    assert "blocks 2 path(s), 1 path(s) remain" in text
+    reduction_line = next(l for l in lines if l.startswith("Estimated risk reduction"))
+    assert "0.60" in reduction_line
+    assert "fraction of known baseline route risk blocked" in reduction_line
+    assert "relative route score" not in reduction_line
+    assert "  - example assumption" in lines
+
+    empty = RemediationRecommendation(
+        recommendation_id="rec_empty",
+        graph_version="v1",
+        action_type="remove_read_permission",
+        target_id="r3",
+    )
+    empty_text = explain_recommendation(empty)
+    assert "Estimated cost: n/a" in empty_text
+    assert "Estimated risk reduction: n/a" in empty_text
+    assert "Assumptions:" not in empty_text
