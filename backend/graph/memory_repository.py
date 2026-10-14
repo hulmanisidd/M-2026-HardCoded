@@ -34,6 +34,7 @@ class InMemoryGraphRepository(GraphRepository):
         self._invalidated_at: dict[str, datetime] = {}
         self._unknown_since: dict[str, datetime] = {}
         self._source_api: dict[str, str] = {}
+        self._listeners: list[Callable[[GraphChange], None]] = []
 
     # ---- event-time ledger ------------------------------------------
     def _latest_event_time(self, edge_id: str) -> datetime | None:
@@ -94,10 +95,18 @@ class InMemoryGraphRepository(GraphRepository):
         at = at or self._clock()
         return self._hash(self._effective_edges(at), self._time_blocked_ids(at))
 
+    def subscribe(self, callback: Callable[[GraphChange], None]) -> None:
+        """Call `callback(change)` for every write that actually changed the graph."""
+        self._listeners.append(callback)
+
     def _change(self, kind: ChangeKind, subject_id: str, changed: bool) -> GraphChange:
-        return GraphChange(
+        change = GraphChange(
             kind=kind, subject_id=subject_id, changed=changed, version=self._version()
         )
+        if changed:
+            for callback in list(self._listeners):
+                callback(change)
+        return change
 
     # ---- writes -----------------------------------------------------
     def upsert_entity(
@@ -153,6 +162,14 @@ class InMemoryGraphRepository(GraphRepository):
                 fresh = observed_at is not None and inv is not None and observed_at > inv
                 if not fresh:
                     return ignored()
+
+            # An UNKNOWN edge is only cleared by a fresh, timestamped observation.
+            if (
+                observed_at is None
+                and existing.status == EdgeStatus.UNKNOWN
+                and edge.status not in (EdgeStatus.UNKNOWN, EdgeStatus.INVALIDATED)
+            ):
+                return ignored()
 
         if source_api is not None:
             self._source_api[eid] = source_api
