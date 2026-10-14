@@ -75,6 +75,10 @@ def assess_path(path: AttackPath, snapshot: GraphSnapshot, config: RiskConfig | 
         # impact_score is required by the contract; 0.0 is a placeholder only.
         # risk_score stays None, so this can never rank as "safe".
         return _unknown(path, 0.0, unknowns, reasons)
+    if target.criticality is None:
+        unknowns.append(f"target {target.name} has unknown criticality")
+        # Same as a missing target: no impact value exists, risk_score stays None.
+        return _unknown(path, 0.0, unknowns, reasons)
     impact = cfg.criticality_impact[target.criticality]
     reasons.append(f"target {target.name} criticality={target.criticality.value} -> impact {impact}")
 
