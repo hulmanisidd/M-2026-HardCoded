@@ -1,0 +1,133 @@
+{
+  "UserDetailList": [
+    {
+      "Path": "/",
+      "UserName": "alice",
+      "UserId": "AIDAEXAMPLEALICE",
+      "Arn": "arn:aws:iam::111122223333:user/alice",
+      "GroupList": ["developers"],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [],
+      "Tags": [{"Key": "team", "Value": "platform"}]
+    },
+    {
+      "Path": "/",
+      "UserName": "bob",
+      "UserId": "AIDAEXAMPLEBOB",
+      "Arn": "arn:aws:iam::111122223333:user/bob",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": []
+    }
+  ],
+  "GroupDetailList": [
+    {
+      "Path": "/",
+      "GroupName": "developers",
+      "GroupId": "AGPAEXAMPLEDEVS",
+      "Arn": "arn:aws:iam::111122223333:group/developers",
+      "GroupPolicyList": [
+        {
+          "PolicyName": "AssumeBuildRole",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": "arn:aws:iam::111122223333:role/build-role"
+              }
+            ]
+          }
+        }
+      ],
+      "AttachedManagedPolicies": []
+    }
+  ],
+  "RoleDetailList": [
+    {
+      "Path": "/",
+      "RoleName": "build-role",
+      "RoleId": "AROAEXAMPLEBUILD",
+      "Arn": "arn:aws:iam::111122223333:role/build-role",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {"AWS": "arn:aws:iam::111122223333:root"},
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "BuildPolicy",
+          "PolicyArn": "arn:aws:iam::111122223333:policy/BuildPolicy"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "admin-role",
+      "RoleId": "AROAEXAMPLEADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/admin-role",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {"Service": "lambda.amazonaws.com"},
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    }
+  ],
+  "Policies": [
+    {
+      "PolicyName": "BuildPolicy",
+      "PolicyId": "ANPAEXAMPLEBUILD",
+      "Arn": "arn:aws:iam::111122223333:policy/BuildPolicy",
+      "PolicyVersionList": [
+        {
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": ["iam:PassRole", "lambda:CreateFunction", "lambda:InvokeFunction"],
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "PolicyName": "AdministratorAccess",
+      "PolicyId": "ANPAIWMBCKSKIEE64ZLYK",
+      "Arn": "arn:aws:iam::aws:policy/AdministratorAccess",
+      "PolicyVersionList": [
+        {
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [{"Effect": "Allow", "Action": "*", "Resource": "*"}]
+          }
+        }
+      ]
+    }
+  ]
+}
