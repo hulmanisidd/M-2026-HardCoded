@@ -1,61 +1,61 @@
-"""Attack path contracts: an ordered, contiguous walk through a GraphSnapshot."""
-from __future__ import annotations
+"""AttackPath: an ordered, explainable route through a GraphSnapshot (brief section 9.4)."""
+import hashlib
+from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field, model_validator
+from pydantic import Field, model_validator
+
+from .base import ContractModel
 
 
-class AttackStep(BaseModel):
-    """One hop of an attack path, referencing an edge by ID."""
+class FeasibilityStatus(StrEnum):
+    """Whether a path can be traversed, judged under the modeled rules only.
 
-    model_config = ConfigDict(frozen=True, extra="forbid")
+    FEASIBLE_UNDER_MODEL - every edge is present, current, and unconditional
+                           according to the modeled authorization rules.
+    CONDITIONAL          - at least one edge is stale/unknown or carries
+                           conditions we could not verify.
+    BLOCKED              - at least one edge is invalidated or outside its
+                           validity window.
 
-    edge_id: str = Field(min_length=1)
-    source_id: str = Field(min_length=1)
-    target_id: str = Field(min_length=1)
+    None of these mean an attack happened.
+    """
+
+    FEASIBLE_UNDER_MODEL = "feasible_under_model"
+    CONDITIONAL = "conditional"
+    BLOCKED = "blocked"
+
+
+def make_path_id(edge_ids: tuple[str, ...]) -> str:
+    """Stable path id derived only from the ordered edge ids.
+
+    The graph version is deliberately NOT part of the id, so the same route
+    keeps its id across graph updates and P5 can track it over time.
+    """
+    key = "\x1f".join(edge_ids)
+    return "p_" + hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
+
+
+class AttackPath(ContractModel):
+    path_id: str = Field(min_length=1)
+    graph_version: str = Field(min_length=1)
+    entry_node_id: str = Field(min_length=1)
+    target_node_id: str = Field(min_length=1)
+    node_ids: tuple[str, ...] = Field(min_length=2)
+    edge_ids: tuple[str, ...] = Field(min_length=1)
+    feasibility_status: FeasibilityStatus
+    evidence_ids: tuple[str, ...] = ()
+    explanations: tuple[str, ...] = ()
 
     @model_validator(mode="after")
-    def _no_self_loop(self) -> "AttackStep":
-        if self.source_id == self.target_id:
-            raise ValueError("an attack step cannot loop back to its own source")
-        return self
-
-
-class AttackPath(BaseModel):
-    """An ordered chain of steps, pinned to the snapshot version it was found in."""
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
-
-    id: str = Field(min_length=1)
-    snapshot_version: str = Field(min_length=1)
-    steps: tuple[AttackStep, ...] = Field(min_length=1)
-
-    @model_validator(mode="after")
-    def _check_chain(self) -> "AttackPath":
-        for prev, nxt in zip(self.steps, self.steps[1:]):
-            if prev.target_id != nxt.source_id:
-                raise ValueError(
-                    f"path is not contiguous: {prev.edge_id} ends at "
-                    f"{prev.target_id} but {nxt.edge_id} starts at {nxt.source_id}"
-                )
-        edge_ids = [s.edge_id for s in self.steps]
-        if len(set(edge_ids)) != len(edge_ids):
+    def _check_shape(self) -> "AttackPath":
+        if len(self.node_ids) != len(self.edge_ids) + 1:
+            raise ValueError("node_ids must have exactly one more item than edge_ids")
+        if self.node_ids[0] != self.entry_node_id:
+            raise ValueError("first node must be the entry node")
+        if self.node_ids[-1] != self.target_node_id:
+            raise ValueError("last node must be the target node")
+        if len(set(self.node_ids)) != len(self.node_ids):
+            raise ValueError("path revisits a node")
+        if len(set(self.edge_ids)) != len(self.edge_ids):
             raise ValueError("path reuses an edge")
-        nodes = [self.steps[0].source_id] + [s.target_id for s in self.steps]
-        if len(set(nodes)) != len(nodes):
-            raise ValueError("path revisits an entity")
         return self
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def entry_id(self) -> str:
-        return self.steps[0].source_id
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def target_id(self) -> str:
-        return self.steps[-1].target_id
-
-    @computed_field  # type: ignore[prop-decorator]
-    @property
-    def edge_ids(self) -> tuple[str, ...]:
-        return tuple(s.edge_id for s in self.steps)
