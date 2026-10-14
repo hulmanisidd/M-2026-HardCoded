@@ -9,7 +9,9 @@ from backend.remediation.candidates import Candidate
 
 
 from backend.remediation.scoring import RiskConfig, rank_paths
-
+from backend.remediation.candidates import generate_candidates
+from backend.remediation.simulation import recommend
+from contracts.remediation import RemediationRecommendation
 
 
 @dataclass(frozen=True)
@@ -176,3 +178,44 @@ def greedy_select(
         rejected=tuple(rejected),
         assumptions=tuple(assumptions),
     )
+
+
+def recommend_fixes(
+    paths,
+    assessments,
+    snapshot,
+    constraints: OptimizerConstraints | None = None,
+    *,
+    find_paths,
+    config: RiskConfig | None = None,
+) -> list[RemediationRecommendation]:
+    """Choose fixes with the greedy optimizer; return SIMULATED recommendations.
+
+    Each recommendation is that fix simulated alone. The set-level effect
+    (combined cost and residual risk) is stated in each one's assumptions.
+    """
+    mismatched = sorted(a.path_id for a in assessments if a.graph_version != snapshot.version)
+    if mismatched:
+        raise ValueError(f"assessments were computed on a different graph version: {mismatched}")
+
+    candidates = generate_candidates(paths, snapshot)
+    result = greedy_select(candidates, snapshot, find_paths, constraints, config)
+
+    n = len(result.chosen)
+    summary = (
+        f"Whole chosen set: total cost {result.total_cost:.2f} (0-1 assumption); "
+        f"known relative risk {result.baseline.known_risk:.2f} -> {result.residual.known_risk:.2f}; "
+        f"{len(result.residual.residual_path_ids)} path(s) remain."
+    )
+    overlap = (
+        "Blocked/residual paths and risk reduction on this recommendation are for this fix "
+        "alone; they overlap when fixes share paths."
+    )
+
+    out: list[RemediationRecommendation] = []
+    for i, cand in enumerate(result.chosen, start=1):
+        rec = recommend(cand, snapshot, find_paths, config)
+        notes = [f"Fix {i} of {n} chosen by the greedy optimizer.", summary, overlap, *result.assumptions]
+        merged = list(rec.assumptions) + [x for x in notes if x not in rec.assumptions]
+        out.append(rec.model_copy(update={"assumptions": merged}))
+    return out

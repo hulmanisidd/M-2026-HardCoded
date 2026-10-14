@@ -1,8 +1,15 @@
 from backend.remediation.candidates import generate_candidates
 from backend.remediation.optimizer import OptimizerConstraints, greedy_select, residual_risk
 from test_p4_simulation import build, cand_for, find_paths
+import pytest
 
+from backend.remediation.optimizer import recommend_fixes
+from backend.remediation.scoring import rank_paths
+from contracts.risk import RiskAssessment
+from datetime import datetime, timezone
 
+from contracts import EdgeStatus, Entity, GraphSnapshot, NodeType, RelationType, Relationship, Criticality
+from test_p4_simulation import NOW
 def test_no_fixes_leaves_all_three_paths():
     s = build()
     r = residual_risk([], s, find_paths)
@@ -100,3 +107,71 @@ def test_mandatory_fix_is_included():
     cons = OptimizerConstraints(mandatory_edge_ids=frozenset(must.plan.removed_edge_ids))
     r = greedy_select(generate_candidates(find_paths(s), s), s, find_paths, cons)
     assert must.candidate_id in [c.candidate_id for c in r.chosen]
+def recs(constraints=None):
+    s = build()
+    p = find_paths(s)
+    return s, recommend_fixes(p, rank_paths(p, s), s, constraints, find_paths=find_paths)
+
+
+def test_recommend_fixes_returns_simulated_recommendations_with_cost():
+    s, r = recs()
+    assert len(r) >= 2
+    assert all(x.verification_status == "SIMULATED" for x in r)
+    assert all(x.estimated_cost is not None for x in r)
+    assert all(x.graph_version == s.version for x in r)
+
+
+def test_recommendations_state_greedy_and_cost_assumptions():
+    _, r = recs()
+    for x in r:
+        text = " ".join(x.assumptions).lower()
+        assert "not guaranteed globally optimal" in text
+        assert "0-1 assumption" in text
+
+
+def test_recommend_fixes_respects_forbidden_action_type():
+    _, r = recs(OptimizerConstraints(forbidden_action_types=frozenset({"restrict_role_trust"})))
+    assert len(r) == 3
+    assert {x.action_type for x in r} == {"remove_read_permission"}
+
+
+def test_assessments_from_another_graph_version_are_rejected():
+    s = build()
+    p = find_paths(s)
+    stale = [RiskAssessment(path_id="x", graph_version="v0", impact_score=0.5, confidence="low")]
+    with pytest.raises(ValueError):
+        recommend_fixes(p, stale, s, find_paths=find_paths)
+
+def build_with_unknown_edge():
+    """Same shape as build(), but the u->r3 edge is UNKNOWN, so path u-r3-b has unknown risk."""
+    s = build()
+    edges = tuple(
+        e.model_copy(update={"status": EdgeStatus.UNKNOWN})
+        if (e.source_id, e.target_id) == ("u", "r3") else e
+        for e in s.edges
+    )
+    return GraphSnapshot(version=s.version, created_at=NOW, entities=s.entities, edges=edges)
+
+
+def test_unknown_path_is_reported_not_counted_as_zero_risk():
+    s = build_with_unknown_edge()
+    base = residual_risk([], s, find_paths)
+    assert len(base.unknown_path_ids) == 1
+    assert len(base.residual_path_ids) == 3          # the unknown path is still present, never dropped
+    assert base.known_risk > 0                       # the other two paths are scored
+
+
+def test_optimizer_states_unknown_paths_are_excluded_from_totals():
+    s = build_with_unknown_edge()
+    r = greedy_select(generate_candidates(find_paths(s), s), s, find_paths)
+    text = " ".join(r.assumptions).lower()
+    assert "unknown risk" in text
+    assert "excluded" in text
+
+
+def test_fix_on_unknown_path_is_not_credited_with_risk_reduction():
+    s = build_with_unknown_edge()
+    p = find_paths(s)
+    r = recommend_fixes(p, rank_paths(p, s), s, find_paths=find_paths)
+    assert all(x.estimated_risk_reduction is not None for x in r)
+    assert r, "known-risk paths should still produce recommendations"
