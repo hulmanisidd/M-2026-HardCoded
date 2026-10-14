@@ -65,3 +65,5 @@ class SearchStats(ContractModel):
     truncation_reason: str | None = None
     paths_found: int = 0
     blocked_transitions_rejected: int = 0
+    unknown_entry_ids: tuple[str, ...] = ()
+    unknown_target_ids: tuple[str, ...] = ()
