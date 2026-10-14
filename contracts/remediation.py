@@ -34,6 +34,7 @@ class RemediationRecommendation(ContractModel):
     estimated_risk_reduction: float | None = None
     assumptions: list[str] = Field(default_factory=list)
     verification_status: str = VerificationStatus.PROPOSED
+    plan_id: str | None = None
 
 
 class RemediationPlan(ContractModel):
@@ -41,7 +42,6 @@ class RemediationPlan(ContractModel):
     base_version: str = Field(min_length=1)
     removed_edge_ids: tuple[str, ...] = Field(min_length=1)
     rationale: str = ""
-    plan_id: str | None = None
 
     @model_validator(mode="after")
     def unique_edges(self) -> "RemediationPlan":
