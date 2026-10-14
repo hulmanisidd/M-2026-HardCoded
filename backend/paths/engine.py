@@ -10,6 +10,14 @@ from .traversal import traverse
 from .validator import combine_statuses
 
 
+def _known_entity_ids(graph: GraphReader) -> set[str] | None:
+    """Entity IDs if the reader exposes them, else None (cannot verify)."""
+    entities = getattr(graph, "entities", None)
+    if entities is None:
+        return None
+    return {e.entity_id for e in entities}
+
+
 def discover_paths(
     graph: GraphReader,
     entry_points: Iterable[str],
@@ -21,10 +29,20 @@ def discover_paths(
     options.max_paths is a total cap across all entry points. If the cap is
     already full when another entry point is reached, truncation is reported
     conservatively.
+
+    Entry or target IDs that the graph does not contain are reported in
+    stats.unknown_entry_ids / stats.unknown_target_ids instead of silently
+    producing "no paths". If the reader cannot list its entities, the check is
+    skipped and nothing is reported as unknown.
     """
     options = options or PathOptions()
     entries = tuple(dict.fromkeys(entry_points))
     target_ids = tuple(dict.fromkeys(targets))
+
+    known = _known_entity_ids(graph)
+    unknown_entries = tuple(e for e in entries if known is not None and e not in known)
+    unknown_targets = tuple(t for t in target_ids if known is not None and t not in known)
+    entries = tuple(e for e in entries if e not in unknown_entries)
 
     paths: list[AttackPath] = []
     seen: set[str] = set()
@@ -64,7 +82,9 @@ def discover_paths(
                 )
             )
 
-    paths.sort(key=lambda p: (len(p.edge_ids), p.node_ids))
+    # Deterministic order: shortest first, then by nodes, then by edges
+    # (edges break ties between parallel edges with identical node sequences).
+    paths.sort(key=lambda p: (len(p.edge_ids), p.node_ids, p.edge_ids))
     return PathSearchResult(
         graph_version=graph.version,
         paths=tuple(paths),
@@ -73,6 +93,8 @@ def discover_paths(
             truncation_reason=truncation_reason,
             paths_found=len(paths),
             blocked_transitions_rejected=blocked_rejected,
+            unknown_entry_ids=unknown_entries,
+            unknown_target_ids=unknown_targets,
         ),
     )
 
@@ -83,5 +105,14 @@ def find_paths(
     targets: Iterable[str],
     options: PathOptions | None = None,
 ) -> list[AttackPath]:
-    """Contract signature from the brief: find_paths(snapshot, entries, targets, options)."""
+    """Contract signature from the brief: find_paths(snapshot, entries, targets, options).
+
+    Returns only the paths. Callers that need truncation or unknown-ID
+    information must call discover_paths instead.
+    """
     return list(discover_paths(snapshot, entry_points, targets, options).paths)
+
+
+def paths_using_edge(paths: Iterable[AttackPath], edge_id: str) -> list[AttackPath]:
+    """Paths that traverse the given edge (for affected-region recompute by P5)."""
+    return [p for p in paths if edge_id in p.edge_ids]

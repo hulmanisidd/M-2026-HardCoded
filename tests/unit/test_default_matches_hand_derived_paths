@@ -1,0 +1,25 @@
+from collections import defaultdict
+from contracts.relationships import Relationship
+from contracts.graph import TransitionResult
+
+
+class FixtureGraph:
+    """Minimal read-only GraphReader built from the JSON fixture."""
+
+    def __init__(self, data):
+        self.version = data["graph_version"]
+        self._edges = {e["edge_id"]: Relationship(**e) for e in data["edges"]}
+        self._out = defaultdict(list)
+        for rel in self._edges.values():
+            self._out[rel.source_id].append(rel)
+
+    def get_neighbors(self, entity_id):
+        return list(self._out.get(entity_id, []))
+
+    def check_transition(self, edge_id, context):
+        rel = self._edges[edge_id]
+        ...  # return a TransitionResult derived from rel.status
+
+
+def build_graph(data):
+    return FixtureGraph(data)
