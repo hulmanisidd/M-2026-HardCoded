@@ -1,5 +1,6 @@
 from backend.updates.dependencies import DependencyIndex
-from backend.updates.models import GraphChange
+from backend.graph.models import GraphChange
+from backend.updates.models import UpdateResult
 from contracts.paths import AttackPath, FeasibilityStatus, make_path_id
 
 
@@ -49,9 +50,17 @@ def test_remove_cleans_the_notebook():
     assert idx.paths_using("e2") == frozenset()
 
 
-def test_touched_edges_ignore_added_edges():
+def test_graph_change_records_edge_invalidation():
+    from backend.graph.models import ChangeKind, GraphChange
+
     change = GraphChange(
-        from_version="v1", to_version="v2",
-        added_edge_ids=("new",), removed_edge_ids=("e1",), changed_edge_ids=("e3",),
+        kind=ChangeKind.EDGE_INVALIDATED,
+        subject_id="e1",
+        changed=True,
+        version="v2",
     )
-    assert change.touched_edge_ids == frozenset({"e1", "e3"})
+
+    assert change.kind == ChangeKind.EDGE_INVALIDATED
+    assert change.subject_id == "e1"
+    assert change.changed is True
+    assert change.version == "v2"
