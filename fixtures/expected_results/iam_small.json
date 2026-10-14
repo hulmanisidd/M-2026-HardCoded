@@ -1,0 +1,35 @@
+{
+  "fixture_version": "2",
+  "graph_version": "v-iam-small-1",
+  "nodes": {
+    "alice": "IAM_USER", "ci-bot": "IAM_USER",
+    "app": "IAM_ROLE", "deploy": "IAM_ROLE", "admin": "IAM_ROLE",
+    "admins": "IAM_ROLE", "prod-db": "S3_BUCKET"
+  },
+  "critical": ["prod-db"],
+  "edges": [
+    ["alice", "CAN_ASSUME", "app", "confirmed"],
+    ["app", "CAN_ASSUME", "deploy", "confirmed"],
+    ["deploy", "CAN_READ", "prod-db", "confirmed"],
+    ["app", "CAN_READ", "prod-db", "stale"],
+    ["alice", "CAN_ASSUME", "admin", "confirmed"],
+    ["admin", "CAN_READ", "prod-db", "invalidated"],
+    ["deploy", "CAN_ASSUME", "app", "confirmed"],
+    ["ci-bot", "CAN_ASSUME", "deploy", "confirmed"],
+    ["alice", "MEMBER_OF", "admins", "confirmed"],
+    ["admins", "CAN_READ", "prod-db", "confirmed"]
+  ],
+  "entries": ["alice", "ci-bot"],
+  "targets": ["prod-db"],
+  "expected_default": [
+    [["alice", "app", "deploy", "prod-db"], "feasible_under_model"],
+    [["alice", "app", "prod-db"], "conditional"],
+    [["ci-bot", "deploy", "prod-db"], "feasible_under_model"],
+    [["ci-bot", "deploy", "app", "prod-db"], "conditional"]
+  ],
+  "must_not_appear": [
+    ["alice", "admin", "prod-db"],
+    ["alice", "app", "deploy", "app", "prod-db"],
+    ["alice", "admins", "prod-db"]
+  ]
+}

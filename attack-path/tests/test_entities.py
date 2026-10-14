@@ -17,7 +17,7 @@ def make_entity(**overrides):
 
 def test_valid_entity_with_defaults():
     e = make_entity()
-    assert e.criticality == Criticality.LOW
+    assert e.criticality is None
     assert e.attributes == {}
 
 
