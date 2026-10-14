@@ -35,7 +35,8 @@ class OptimizerConstraints:
     mandatory_edge_ids: frozenset[str] = frozenset()
     # Maximum number of fixes to choose.
     max_actions: int | None = None
-    # Weight on cost in: score = risk_reduction - cost_weight * cost
+    # Weight on cost in: score = gain - cost_weight * cost, where gain is the drop in summed
+    # known risk (relative route score units, not the 0-1 estimated_risk_reduction fraction).
     cost_weight: float = 0.0
 
 def is_allowed(candidate: Candidate, constraints: OptimizerConstraints) -> bool:
@@ -108,6 +109,12 @@ def greedy_select(
     config: RiskConfig | None = None,
 ) -> OptimizerResult:
     """Greedy approximation: repeatedly add the fix with the best marginal score.
+
+    score = gain - cost_weight * cost, where gain is how much the summed known risk drops when
+    the fix is added to the fixes already chosen (so paths shared with earlier picks are not
+    counted twice). Mandatory fixes are chosen first and may exceed max_total_cost and
+    max_actions; this is reported in the result's assumptions. A fix that makes more paths
+    unscorable is skipped, and the loop stops when no fix has a positive score.
 
     Not guaranteed globally optimal.
     """
