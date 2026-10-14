@@ -1,0 +1,68 @@
+{
+  "scenario": "scenario_01_passrole_escalation",
+  "description": "alice reaches admin: developers group -> assume build-role -> pass admin-role to Lambda.",
+  "intended_attack_path": [
+    "alice",
+    "build-role",
+    "admin-role"
+  ],
+  "must_exist": [
+    {
+      "source": "alice",
+      "relation": "member_of",
+      "target": "developers"
+    },
+    {
+      "source": "alice",
+      "relation": "can_assume",
+      "target": "build-role"
+    },
+    {
+      "source": "build-role",
+      "relation": "can_pass_role",
+      "target": "admin-role"
+    },
+    {
+      "source": "admin-role",
+      "relation": "can_assume",
+      "target": "build-role"
+    },
+    {
+      "source": "admin-role",
+      "relation": "can_modify_policy",
+      "target": "alice"
+    }
+  ],
+  "must_not_exist": [
+    {
+      "source": "bob",
+      "relation": "can_assume",
+      "target": "build-role"
+    },
+    {
+      "source": "alice",
+      "relation": "can_assume",
+      "target": "admin-role"
+    },
+    {
+      "source": "build-role",
+      "relation": "can_assume",
+      "target": "admin-role"
+    },
+    {
+      "source": "build-role",
+      "relation": "can_pass_role",
+      "target": "build-role"
+    },
+    {
+      "source": "alice",
+      "relation": "can_pass_role",
+      "target": "admin-role"
+    },
+    {
+      "source": "build-role",
+      "relation": "can_modify_policy",
+      "target": "alice"
+    }
+  ]
+}

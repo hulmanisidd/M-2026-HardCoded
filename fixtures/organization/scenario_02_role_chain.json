@@ -1,0 +1,127 @@
+{
+  "UserDetailList": [
+    {
+      "Path": "/",
+      "UserName": "carol",
+      "UserId": "AIDACAROL",
+      "Arn": "arn:aws:iam::111122223333:user/carol",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": []
+    },
+    {
+      "Path": "/",
+      "UserName": "dave",
+      "UserId": "AIDADAVE",
+      "Arn": "arn:aws:iam::111122223333:user/dave",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": []
+    }
+  ],
+  "GroupDetailList": [],
+  "RoleDetailList": [
+    {
+      "Path": "/",
+      "RoleName": "role-a",
+      "RoleId": "AROAROLE-A",
+      "Arn": "arn:aws:iam::111122223333:role/role-a",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:user/carol"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [
+        {
+          "PolicyName": "AssumeRoleB",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": "arn:aws:iam::111122223333:role/role-b"
+              }
+            ]
+          }
+        }
+      ],
+      "AttachedManagedPolicies": []
+    },
+    {
+      "Path": "/",
+      "RoleName": "role-b",
+      "RoleId": "AROAROLE-B",
+      "Arn": "arn:aws:iam::111122223333:role/role-b",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "role-c",
+      "RoleId": "AROAROLE-C",
+      "Arn": "arn:aws:iam::111122223333:role/role-c",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": []
+    }
+  ],
+  "Policies": [
+    {
+      "PolicyName": "AdministratorAccess",
+      "PolicyId": "ANPAADMINISTRATORACCESS",
+      "Arn": "arn:aws:iam::aws:policy/AdministratorAccess",
+      "PolicyVersionList": [
+        {
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "*",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

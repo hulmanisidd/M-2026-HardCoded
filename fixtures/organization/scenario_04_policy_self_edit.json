@@ -1,0 +1,166 @@
+{
+  "UserDetailList": [
+    {
+      "Path": "/",
+      "UserName": "gina",
+      "UserId": "AIDAGINA",
+      "Arn": "arn:aws:iam::111122223333:user/gina",
+      "GroupList": [
+        "devs"
+      ],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": []
+    },
+    {
+      "Path": "/",
+      "UserName": "henry",
+      "UserId": "AIDAHENRY",
+      "Arn": "arn:aws:iam::111122223333:user/henry",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "SelfAttach",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "iam:AttachUserPolicy",
+                "Resource": "arn:aws:iam::111122223333:user/henry"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "ivan",
+      "UserId": "AIDAIVAN",
+      "Arn": "arn:aws:iam::111122223333:user/ivan",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "AttachOpsRoles",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "iam:AttachRolePolicy",
+                "Resource": "arn:aws:iam::111122223333:role/ops-*"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "GroupDetailList": [
+    {
+      "Path": "/",
+      "GroupName": "devs",
+      "GroupId": "AGPADEVS",
+      "Arn": "arn:aws:iam::111122223333:group/devs",
+      "GroupPolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "DevPolicy",
+          "PolicyArn": "arn:aws:iam::111122223333:policy/DevPolicy"
+        }
+      ]
+    }
+  ],
+  "RoleDetailList": [
+    {
+      "Path": "/",
+      "RoleName": "ops-role",
+      "RoleId": "AROAOPS-ROLE",
+      "Arn": "arn:aws:iam::111122223333:role/ops-role",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": []
+    },
+    {
+      "Path": "/",
+      "RoleName": "ops-admin",
+      "RoleId": "AROAOPS-ADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/ops-admin",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": []
+    },
+    {
+      "Path": "/",
+      "RoleName": "prod-role",
+      "RoleId": "AROAPROD-ROLE",
+      "Arn": "arn:aws:iam::111122223333:role/prod-role",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": []
+    }
+  ],
+  "Policies": [
+    {
+      "PolicyName": "DevPolicy",
+      "PolicyId": "ANPADEVPOLICY",
+      "Arn": "arn:aws:iam::111122223333:policy/DevPolicy",
+      "PolicyVersionList": [
+        {
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "s3:ListAllMyBuckets",
+                "Resource": "*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": "iam:CreatePolicyVersion",
+                "Resource": "arn:aws:iam::111122223333:policy/DevPolicy"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

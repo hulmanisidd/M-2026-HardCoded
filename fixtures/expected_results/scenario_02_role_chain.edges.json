@@ -1,0 +1,63 @@
+{
+  "scenario": "scenario_02_role_chain",
+  "description": "carol assumes role-a, which may assume role-b (admin). dave has nothing.",
+  "intended_attack_path": [
+    "carol",
+    "role-a",
+    "role-b"
+  ],
+  "must_exist": [
+    {
+      "source": "carol",
+      "relation": "can_assume",
+      "target": "role-a"
+    },
+    {
+      "source": "role-a",
+      "relation": "can_assume",
+      "target": "role-b"
+    },
+    {
+      "source": "role-b",
+      "relation": "can_assume",
+      "target": "role-c"
+    },
+    {
+      "source": "role-b",
+      "relation": "has_policy",
+      "target": "AdministratorAccess"
+    }
+  ],
+  "must_not_exist": [
+    {
+      "source": "carol",
+      "relation": "can_assume",
+      "target": "role-b"
+    },
+    {
+      "source": "carol",
+      "relation": "can_assume",
+      "target": "role-c"
+    },
+    {
+      "source": "dave",
+      "relation": "can_assume",
+      "target": "role-a"
+    },
+    {
+      "source": "dave",
+      "relation": "can_assume",
+      "target": "role-b"
+    },
+    {
+      "source": "role-a",
+      "relation": "can_assume",
+      "target": "role-c"
+    },
+    {
+      "source": "role-b",
+      "relation": "can_assume",
+      "target": "role-a"
+    }
+  ]
+}

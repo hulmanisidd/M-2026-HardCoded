@@ -1,0 +1,67 @@
+{
+  "scenario": "scenario_04_policy_self_edit",
+  "description": "gina can rewrite DevPolicy, which grants her own permissions. henry can attach policies to himself. ivan's scope is only ops-* roles.",
+  "intended_attack_path": [
+    "gina",
+    "DevPolicy"
+  ],
+  "must_exist": [
+    {
+      "source": "gina",
+      "relation": "member_of",
+      "target": "devs"
+    },
+    {
+      "source": "devs",
+      "relation": "has_policy",
+      "target": "DevPolicy"
+    },
+    {
+      "source": "gina",
+      "relation": "can_modify_policy",
+      "target": "DevPolicy"
+    },
+    {
+      "source": "henry",
+      "relation": "can_modify_policy",
+      "target": "henry"
+    },
+    {
+      "source": "ivan",
+      "relation": "can_modify_policy",
+      "target": "ops-role"
+    },
+    {
+      "source": "ivan",
+      "relation": "can_modify_policy",
+      "target": "ops-admin"
+    }
+  ],
+  "must_not_exist": [
+    {
+      "source": "ivan",
+      "relation": "can_modify_policy",
+      "target": "prod-role"
+    },
+    {
+      "source": "henry",
+      "relation": "can_modify_policy",
+      "target": "gina"
+    },
+    {
+      "source": "gina",
+      "relation": "can_modify_policy",
+      "target": "devs"
+    },
+    {
+      "source": "gina",
+      "relation": "can_modify_policy",
+      "target": "henry"
+    },
+    {
+      "source": "ivan",
+      "relation": "can_modify_policy",
+      "target": "DevPolicy"
+    }
+  ]
+}
