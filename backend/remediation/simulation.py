@@ -37,6 +37,10 @@ def simulate_plan(snapshot: GraphSnapshot, plan: RemediationPlan,
     forked = snapshot.fork(plan.removed_edge_ids)
     before = _live(find_paths(snapshot))
     after = _live(find_paths(forked))
+    # Fork only removes edges, so any path found after the cut also existed before. A capped
+    # search can miss it in `before`; add it back so the result stays valid.
+    seen = {p.path_id for p in before}
+    before = before + [p for p in after if p.path_id not in seen]
     result = SimulationResult(
         plan_id=plan.id, before_version=snapshot.version, after_version=forked.version,
         paths_before=tuple(sorted(p.path_id for p in before)),
@@ -50,6 +54,9 @@ def recommend(candidate: Candidate, snapshot: GraphSnapshot, find_paths: PathFin
     """Simulate one candidate and return a SIMULATED recommendation (never VERIFIED: that is P5's job)."""
     result, residual = simulate_plan(snapshot, candidate.plan, find_paths)
     before_paths = _live(find_paths(snapshot))
+    seen = {p.path_id for p in before_paths}
+    extra = [p for p in residual if p.path_id not in seen]  # found only after the cut
+    before_paths = before_paths + extra
     assessments = {a.path_id: a for a in rank_paths(before_paths, snapshot, config)}
 
     known_total = sum(a.risk_score for a in assessments.values() if a.risk_score is not None)
@@ -61,6 +68,9 @@ def recommend(candidate: Candidate, snapshot: GraphSnapshot, find_paths: PathFin
     if unknown_ids:
         assumptions.append(f"{len(unknown_ids)} path(s) have unknown risk and are excluded from risk_reduction")
     reduction = round(blocked_risk / known_total, 6) if known_total > 0 else None
+    if extra:
+        assumptions.append(f"search looks truncated: {len(extra)} path(s) appeared only after the fix; "
+                           "risk figures are a lower bound")
 
     return RemediationRecommendation(
         recommendation_id="rec_" + hashlib.sha256(
