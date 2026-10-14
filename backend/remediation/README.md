@@ -31,8 +31,8 @@ Ranks attack paths by a relative risk score, proposes fixes (remove an edge), si
 ## How to read the numbers
 
 - **Risk score** is a relative route score (0-1), not a probability. Nothing here is calibrated against real incident data.
-- **Unknown evidence:** a path whose evidence is missing (for example an `UNKNOWN` edge) gets `risk_score = None`, confidence `unknown`, and entries in `unknowns`. It stays in the residual paths and is excluded from risk totals. It is never counted as zero risk.
-- **`estimated_risk_reduction`** is a fraction of the known baseline risk: `blocked risk / known total`, from 0 to 1. It is not an absolute score. A fix that blocks only unknown-risk paths gets exactly `0.0`.
+- **Unknown evidence:** a path whose evidence is missing (for example an `UNKNOWN` edge) gets `risk_score = None`, confidence `unknown`, and entries in `unknowns`. It stays in the residual paths and is excluded from risk totals. It is never counted as zero risk. A target whose criticality is unknown (`None`) is treated the same way.
+- **`estimated_risk_reduction`** is a fraction of the known baseline risk: `blocked risk / known total`, from 0 to 1. It is not an absolute score. A fix that blocks only unknown-risk paths gets exactly `0.0`. It is `None` (not `0.0`) when the known baseline risk is 0 or there are no known-risk paths.
 - **`estimated_cost`** and **disruption** are 0-1 assumptions from `DEFAULT_ACTIONS` in `candidates.py`, not measured values. They need team review.
 - **Per-recommendation numbers** describe that fix simulated alone. They overlap when fixes share paths. Set-level cost and risk are in the recommendation's `assumptions`.
 
@@ -40,15 +40,18 @@ Ranks attack paths by a relative risk score, proposes fixes (remove an edge), si
 
 - Greedy: each round picks the best marginal fix. It is an approximation, not guaranteed globally optimal.
 - Constraints (`OptimizerConstraints`): `max_total_cost`, `max_disruption_per_action`, `forbidden_edge_ids`, `forbidden_action_types`, `mandatory_edge_ids`, `max_actions`, `cost_weight`.
-- Mandatory fixes are currently chosen even if they exceed the budget or `max_actions`. This is a design choice awaiting team confirmation.
+- Mandatory fixes are currently chosen even if they exceed the budget or `max_actions`. This is a design choice awaiting team confirmation. When they do exceed a cap, an assumption line says so.
+- A mandatory edge that the constraints reject is reported as "rejected by constraints", separately from one with no matching candidate.
 - A fix that increases the number of unknown paths is skipped.
 - `recommend_fixes` raises `ValueError` if the assessments' `graph_version` does not match the snapshot.
-- Each round scores a candidate as `gain - cost_weight * cost`. `cost_weight` defaults to `0.0`, so cost is ignored unless you set it.
+- Each round scores a candidate as `gain - cost_weight * cost`, where `gain` is the drop in summed known risk. `cost_weight` defaults to `0.0`, so cost is ignored unless you set it.
 - A mandatory edge with no matching candidate is reported in the result's assumptions, not dropped silently.
+
 ## Assumptions and limits
 
 - A fix is "remove an edge". Simulation is edge removal on a graph copy, so real AWS policy semantics are not re-evaluated.
 - Paths found on a forked graph must be scored against that fork.
+- If a capped path search misses a path before a fix and finds it after, it is added back to the baseline, and the recommendation's assumptions say the figures are a lower bound. P4 cannot detect truncation itself; the caller should check `stats.truncated` from `discover_paths` first.
 ## Scoring model (`scoring.py`)
 
 `risk_score = likelihood x impact`, both on a 0-1 scale. It is a relative route score, not a probability.
