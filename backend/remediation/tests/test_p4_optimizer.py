@@ -107,6 +107,38 @@ def test_mandatory_fix_is_included():
     cons = OptimizerConstraints(mandatory_edge_ids=frozenset(must.plan.removed_edge_ids))
     r = greedy_select(generate_candidates(find_paths(s), s), s, find_paths, cons)
     assert must.candidate_id in [c.candidate_id for c in r.chosen]
+
+
+def test_mandatory_fix_over_budget_is_reported_not_silent():
+    s = build()
+    must = cand_for(s, "u", "r3")                     # cost 0.3
+    cons = OptimizerConstraints(mandatory_edge_ids=frozenset(must.plan.removed_edge_ids),
+                                max_total_cost=0.25)
+    r = greedy_select(generate_candidates(find_paths(s), s), s, find_paths, cons)
+    assert must.candidate_id in [c.candidate_id for c in r.chosen]
+    assert r.total_cost > 0.25                        # the mandatory fix really exceeds the cap
+    assert any("Mandatory fixes exceeded max_total_cost" in a for a in r.assumptions)
+
+
+def test_mandatory_fixes_over_max_actions_are_reported_not_silent():
+    s = build()
+    must = [cand_for(s, "u", "r3"), cand_for(s, "r3", "b")]
+    edges = frozenset(e for c in must for e in c.plan.removed_edge_ids)
+    r = greedy_select(generate_candidates(find_paths(s), s), s, find_paths,
+                      OptimizerConstraints(mandatory_edge_ids=edges, max_actions=1))
+    assert len(r.chosen) == 2                         # both mandatory fixes kept despite the cap
+    assert any("Mandatory fixes exceeded max_actions" in a for a in r.assumptions)
+
+
+def test_no_over_cap_line_when_mandatory_fixes_fit_the_caps():
+    s = build()
+    must = cand_for(s, "u", "r3")
+    cons = OptimizerConstraints(mandatory_edge_ids=frozenset(must.plan.removed_edge_ids),
+                                max_total_cost=1.0, max_actions=3)
+    r = greedy_select(generate_candidates(find_paths(s), s), s, find_paths, cons)
+    assert not any("Mandatory fixes exceeded" in a for a in r.assumptions)
+
+
 def recs(constraints=None):
     s = build()
     p = find_paths(s)

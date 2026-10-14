@@ -130,6 +130,8 @@ def greedy_select(
     covered = {e for c in chosen for e in c.plan.removed_edge_ids}
     unmet = sorted(constraints.mandatory_edge_ids - covered)
     total_cost = sum(c.cost for c in chosen)
+    mandatory_count = len(chosen)
+    mandatory_cost = total_cost
 
     baseline = residual_risk([], snapshot, find_paths, config)
     current = residual_risk(chosen, snapshot, find_paths, config)
@@ -169,6 +171,14 @@ def greedy_select(
         )
     if unmet:
         assumptions.append(f"Mandatory edges with no matching candidate: {unmet}")
+    if constraints.max_total_cost is not None and mandatory_cost > constraints.max_total_cost:
+        assumptions.append(
+            f"Mandatory fixes exceeded max_total_cost ({mandatory_cost:.2f} > {constraints.max_total_cost:.2f}); they were kept anyway."
+        )
+    if constraints.max_actions is not None and mandatory_count > constraints.max_actions:
+        assumptions.append(
+            f"Mandatory fixes exceeded max_actions ({mandatory_count} > {constraints.max_actions}); they were kept anyway."
+        )
 
     return OptimizerResult(
         chosen=tuple(chosen),
