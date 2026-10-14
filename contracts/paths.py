@@ -1,47 +1,67 @@
-"""Attack path (brief 9.4) plus search options/stats. Owner: P3."""
-from __future__ import annotations
 
-from enum import Enum
+"""Canonical attack-path contracts and search controls."""
 
-from pydantic import BaseModel, ConfigDict, Field
+import hashlib
+from enum import StrEnum
 
+from pydantic import Field, model_validator
 
-class Feasibility(str, Enum):
-    FEASIBLE_UNDER_MODEL = "FEASIBLE_UNDER_MODEL"
-    CONDITIONAL = "CONDITIONAL"
-    BLOCKED = "BLOCKED"
+from .base import ContractModel
 
 
-class AttackPath(BaseModel):
-    model_config = ConfigDict(frozen=True)
-
-    path_id: str
-    graph_version: str
-    entry_node_id: str
-    target_node_id: str
-    node_ids: list[str]
-    edge_ids: list[str]
-    feasibility_status: Feasibility
-    evidence_ids: list[str] = Field(default_factory=list)
-    explanations: list[str] = Field(default_factory=list)
+class FeasibilityStatus(StrEnum):
+    FEASIBLE_UNDER_MODEL = "feasible_under_model"
+    CONDITIONAL = "conditional"
+    BLOCKED = "blocked"
 
 
-class PathOptions(BaseModel):
-    """Declared scope and limits for one search (brief 0.2)."""
+# Backwards-compatible name used by the existing graph contract.
+Feasibility = FeasibilityStatus
 
-    model_config = ConfigDict(frozen=True)
 
-    max_depth: int = Field(default=5, ge=1)       # max edges per path
+def make_path_id(edge_ids: tuple[str, ...]) -> str:
+    key = "\x1f".join(edge_ids)
+    return "p_" + hashlib.sha256(key.encode("utf-8")).hexdigest()[:16]
+
+
+class AttackPath(ContractModel):
+    path_id: str = Field(min_length=1)
+    graph_version: str = Field(min_length=1)
+    entry_node_id: str = Field(min_length=1)
+    target_node_id: str = Field(min_length=1)
+    node_ids: tuple[str, ...] = Field(min_length=2)
+    edge_ids: tuple[str, ...] = Field(min_length=1)
+    feasibility_status: FeasibilityStatus
+    evidence_ids: tuple[str, ...] = ()
+    explanations: tuple[str, ...] = ()
+
+    @model_validator(mode="after")
+    def check_shape(self) -> "AttackPath":
+        if len(self.node_ids) != len(self.edge_ids) + 1:
+            raise ValueError(
+                "node_ids must have exactly one more item than edge_ids"
+            )
+        if self.node_ids[0] != self.entry_node_id:
+            raise ValueError("first node must be the entry node")
+        if self.node_ids[-1] != self.target_node_id:
+            raise ValueError("last node must be the target node")
+        if len(set(self.node_ids)) != len(self.node_ids):
+            raise ValueError("path revisits a node")
+        if len(set(self.edge_ids)) != len(self.edge_ids):
+            raise ValueError("path reuses an edge")
+        return self
+
+
+class PathOptions(ContractModel):
+    max_depth: int = Field(default=5, ge=1)
     max_paths: int = Field(default=1000, ge=1)
-    allowed_relation_types: frozenset[str] | None = None  # None = all types
-    include_blocked: bool = False                 # True: also return BLOCKED paths
-    context: dict = Field(default_factory=dict)   # passed to check_transition
+    allowed_relation_types: frozenset[str] | None = None
+    include_blocked: bool = False
+    context: dict = Field(default_factory=dict)
 
 
-class SearchStats(BaseModel):
-    """Truncation is reported, never silent (brief 0.2)."""
-
+class SearchStats(ContractModel):
     truncated: bool = False
-    truncation_reason: str | None = None  # "max_paths" | "max_depth"
+    truncation_reason: str | None = None
     paths_found: int = 0
     blocked_transitions_rejected: int = 0

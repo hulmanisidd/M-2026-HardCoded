@@ -40,4 +40,4 @@ def test_empty_event_id_is_rejected():
 
 def test_unknown_field_is_rejected():
     with pytest.raises(ValidationError):
-        make_event(severity="high")
+        make_event(colour="red")
