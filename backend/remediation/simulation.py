@@ -84,4 +84,5 @@ def recommend(candidate: Candidate, snapshot: GraphSnapshot, find_paths: PathFin
         estimated_risk_reduction=reduction,
         assumptions=assumptions,
         verification_status=VerificationStatus.SIMULATED,
+         plan_id=candidate.plan.id,
     )
