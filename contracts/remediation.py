@@ -41,6 +41,7 @@ class RemediationPlan(ContractModel):
     base_version: str = Field(min_length=1)
     removed_edge_ids: tuple[str, ...] = Field(min_length=1)
     rationale: str = ""
+    plan_id: str | None = None
 
     @model_validator(mode="after")
     def unique_edges(self) -> "RemediationPlan":
