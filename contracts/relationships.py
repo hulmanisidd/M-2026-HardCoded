@@ -55,6 +55,7 @@ class Relationship(ContractModel):
     valid_until: AwareDatetime | None = None
     conditions: dict[str, Any] = Field(default_factory=dict)
     evidence_ids: tuple[str, ...] = ()
+    observed_at: AwareDatetime | None = None
 
     @model_validator(mode="before")
     @classmethod
