@@ -29,12 +29,17 @@ class InMemoryGraphRepository(GraphRepository):
         self._entities: dict[str, Entity] = {}
         self._edges: dict[str, Relationship] = {}
         self._entity_observed_at: dict[str, datetime] = {}
+        self._entity_removed_at: dict[str, datetime] = {}
         # Event-time ledgers, per edge_id. Not part of the contract.
         self._observed_at: dict[str, datetime] = {}
         self._invalidated_at: dict[str, datetime] = {}
         self._unknown_since: dict[str, datetime] = {}
         self._source_api: dict[str, str] = {}
         self._listeners: list[Callable[[GraphChange], None]] = []
+
+    # ---- subscriptions ----------------------------------------------
+    def subscribe(self, callback: Callable[[GraphChange], None]) -> None:
+        self._listeners.append(callback)
 
     # ---- event-time ledger ------------------------------------------
     def _latest_event_time(self, edge_id: str) -> datetime | None:
@@ -95,10 +100,6 @@ class InMemoryGraphRepository(GraphRepository):
         at = at or self._clock()
         return self._hash(self._effective_edges(at), self._time_blocked_ids(at))
 
-    def subscribe(self, callback: Callable[[GraphChange], None]) -> None:
-        """Call `callback(change)` for every write that actually changed the graph."""
-        self._listeners.append(callback)
-
     def _change(self, kind: ChangeKind, subject_id: str, changed: bool) -> GraphChange:
         change = GraphChange(
             kind=kind, subject_id=subject_id, changed=changed, version=self._version()
@@ -114,6 +115,14 @@ class InMemoryGraphRepository(GraphRepository):
     ) -> GraphChange:
         eid = entity.entity_id
         existing = self._entities.get(eid)
+
+        removed = self._entity_removed_at.get(eid)
+        if observed_at is not None and removed is not None:
+            if observed_at <= removed:
+                # Older than a removal we already hold: do not resurrect.
+                return self._change(ChangeKind.ENTITY_UPDATED, eid, False)
+            del self._entity_removed_at[eid]  # strictly newer: reinstated
+
         if observed_at is not None and existing is not None:
             seen = self._entity_observed_at.get(eid)
             if seen is not None and observed_at <= seen:
@@ -127,6 +136,32 @@ class InMemoryGraphRepository(GraphRepository):
             self._entity_observed_at[eid] = observed_at
         kind = ChangeKind.ENTITY_ADDED if existing is None else ChangeKind.ENTITY_UPDATED
         return self._change(kind, entity.entity_id, True)
+
+    def remove_entity(self, entity_id: str, *, at: datetime) -> GraphChange:
+        seen = self._entity_observed_at.get(entity_id)
+        if seen is not None and at <= seen:
+            # Stale removal: we observed this entity at or after `at`.
+            return self._change(ChangeKind.ENTITY_REMOVED, entity_id, False)
+        prev = self._entity_removed_at.get(entity_id)
+        if prev is None or at > prev:
+            self._entity_removed_at[entity_id] = at
+        any_changed = False
+        for eid in sorted(self._edges):
+            edge = self._edges[eid]
+            if entity_id not in (edge.source_id, edge.target_id):
+                continue
+            if edge.status == EdgeStatus.INVALIDATED:
+                continue
+            latest = self._latest_event_time(eid)
+            if latest is not None and at <= latest:
+                continue  # we hold something newer for this edge
+            self._edges[eid] = edge.model_copy(
+                update={"status": EdgeStatus.INVALIDATED}
+            )
+            self._invalidated_at[eid] = at
+            self._unknown_since.pop(eid, None)
+            any_changed = True
+        return self._change(ChangeKind.ENTITY_REMOVED, entity_id, any_changed)
 
     def upsert_edge(
         self,
@@ -162,11 +197,12 @@ class InMemoryGraphRepository(GraphRepository):
                 fresh = observed_at is not None and inv is not None and observed_at > inv
                 if not fresh:
                     return ignored()
-
-            # An UNKNOWN edge is only cleared by a fresh, timestamped observation.
+            # An UNKNOWN edge is only cleared by a newer observation. A write
+            # without observed_at is ignored unless it is itself UNKNOWN or
+            # INVALIDATED.
             if (
-                observed_at is None
-                and existing.status == EdgeStatus.UNKNOWN
+                existing.status == EdgeStatus.UNKNOWN
+                and observed_at is None
                 and edge.status not in (EdgeStatus.UNKNOWN, EdgeStatus.INVALIDATED)
             ):
                 return ignored()
@@ -186,8 +222,8 @@ class InMemoryGraphRepository(GraphRepository):
         else:
             if observed_at is not None:
                 self._observed_at[eid] = observed_at
-            if edge.status != EdgeStatus.UNKNOWN and observed_at is not None:
-                self._unknown_since.pop(eid, None)  # only a newer observation clears UNKNOWN
+                if edge.status != EdgeStatus.UNKNOWN:
+                    self._unknown_since.pop(eid, None)
         kind = ChangeKind.EDGE_ADDED if existing is None else ChangeKind.EDGE_UPDATED
         return self._change(kind, eid, True)
 
@@ -213,13 +249,13 @@ class InMemoryGraphRepository(GraphRepository):
             edge = self._edges[eid]
             if edge.status == EdgeStatus.INVALIDATED:
                 continue
+            if eid not in self._observed_at:
+                continue  # seed / direct writes are never marked UNKNOWN
             if self._source_api.get(eid) != scope.source_api:
                 continue
             source = self._entities.get(edge.source_id)
             if source is None or source.account_id != scope.account_id:
                 continue
-            if eid not in self._observed_at:
-                continue  # never observed (seed / direct write): freshness not judged
             latest = self._latest_event_time(eid)
             if latest is not None and at <= latest:
                 continue  # stale failure report for this edge

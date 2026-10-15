@@ -114,15 +114,9 @@ class GraphUpdater:
 
     def _entity_removed(self, event: NormalizedEvent) -> GraphChange:
         entity_id = _require(event.payload, "entity_id", str)
-        # Never deleted, and incident edges are NOT invalidated here: that
-        # needs P1's confirmation. They go stale or arrive as EDGE_REMOVED.
-        return GraphChange(
-            kind=ChangeKind.ENTITY_UPDATED,
-            subject_id=entity_id,
-            changed=False,
-            version=self._version(),
-        )
-
+        # Entity record is kept; every incident edge is invalidated by the
+        # repository when the removal is newer than the edge's latest event.
+        return self._repo.remove_entity(entity_id, at=event.occurred_at)
     # ---- edges ------------------------------------------------------
     def _edge_observed(self, event: NormalizedEvent) -> GraphChange:
         data = dict(_require(event.payload, "edge", dict))
