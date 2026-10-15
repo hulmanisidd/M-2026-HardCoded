@@ -17,7 +17,7 @@ from collections.abc import Callable, Iterable
 
 from backend.graph.models import GraphChange
 from backend.graph.repository import GraphRepository
-from contracts import Entity, GraphSnapshot, NormalizedEvent, Relationship
+from contracts import NormalizedEvent
 from contracts.base import ContractModel
 
 from .coordinator import UpdateCoordinator
@@ -91,8 +91,15 @@ class EventIntake:
         return EventOutcome(event_id=event.event_id, accepted=True, reason=reason, updates=updates)
 
 
-class NotifyingGraphRepository(GraphRepository):
-    """Decorator: every write returns its GraphChange AND notifies listeners."""
+class NotifyingGraphRepository:
+    """Transparent wrapper: every repository call is forwarded unchanged, and any
+    GraphChange it returns is also sent to the listeners.
+
+    It deliberately does NOT subclass GraphRepository. P2 may add abstract
+    methods at any time (remove_entity, mark_scope_unknown, ...); forwarding by
+    name means this wrapper keeps working without edits, and any new write
+    method that returns a GraphChange (or a list of them) is notified too.
+    """
 
     def __init__(self, inner: GraphRepository, *listeners: ChangeListener) -> None:
         self._inner = inner
@@ -101,31 +108,27 @@ class NotifyingGraphRepository(GraphRepository):
     def subscribe(self, listener: ChangeListener) -> None:
         self._listeners.append(listener)
 
-    def _notify(self, change: GraphChange) -> GraphChange:
-        for listener in self._listeners:
-            listener(change)
-        return change
+    def _notify(self, result):
+        changes = (
+            [result] if isinstance(result, GraphChange)
+            else [c for c in result if isinstance(c, GraphChange)]
+            if isinstance(result, (list, tuple)) else []
+        )
+        for change in changes:
+            for listener in self._listeners:
+                listener(change)
+        return result
 
-    def upsert_entity(self, entity: Entity) -> GraphChange:
-        return self._notify(self._inner.upsert_entity(entity))
+    def __getattr__(self, name: str):
+        attr = getattr(self._inner, name)   # AttributeError if P2 has no such member
+        if not callable(attr):
+            return attr
 
-    def upsert_edge(self, edge: Relationship, *, reinstate: bool = False) -> GraphChange:
-        return self._notify(self._inner.upsert_edge(edge, reinstate=reinstate))
+        def forward(*args, **kwargs):
+            return self._notify(attr(*args, **kwargs))
 
-    def invalidate_edge(self, edge_id: str) -> GraphChange:
-        return self._notify(self._inner.invalidate_edge(edge_id))
-
-    def get_entity(self, entity_id: str) -> Entity | None:
-        return self._inner.get_entity(entity_id)
-
-    def get_edge(self, edge_id: str) -> Relationship | None:
-        return self._inner.get_edge(edge_id)
-
-    def get_neighbors(self, entity_id: str) -> list[Relationship]:
-        return self._inner.get_neighbors(entity_id)
-
-    def snapshot(self) -> GraphSnapshot:
-        return self._inner.snapshot()
+        forward.__name__ = name
+        return forward
 
 
 class EdgeInvalidationApplier:
