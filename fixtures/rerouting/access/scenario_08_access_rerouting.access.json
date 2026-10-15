@@ -1,0 +1,8 @@
+{
+  "note": "Legitimate access that must keep working. Names are entity names from the scenario.",
+  "requirements": [
+    {"principal": "ana-analyst", "resource": "reporting-reader"},
+    {"principal": "ben-billing", "resource": "billing-ledger"},
+    {"principal": "cat-ci", "resource": "deploy-target"}
+  ]
+}
