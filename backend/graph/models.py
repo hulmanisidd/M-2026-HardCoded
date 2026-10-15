@@ -8,6 +8,7 @@ from contracts import ContractModel
 class ChangeKind(StrEnum):
     ENTITY_ADDED = "entity_added"
     ENTITY_UPDATED = "entity_updated"
+    ENTITY_REMOVED = "entity_removed"
     EDGE_ADDED = "edge_added"
     EDGE_UPDATED = "edge_updated"
     EDGE_INVALIDATED = "edge_invalidated"

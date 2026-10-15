@@ -62,7 +62,17 @@ class GraphRepository(ABC):
         stale for them). Edges with no observed_at (seed / direct writes)
         are never marked UNKNOWN. UNKNOWN is cleared only by a newer
         observation."""
-
+    @abstractmethod
+    def remove_entity(self, entity_id: str, *, at: datetime) -> GraphChange:
+        """P1 saw this entity absent from a successful collection. The entity
+        record is kept. Every incident edge (incoming and outgoing) that is not
+        already INVALIDATED and whose latest event is older than `at` becomes
+        INVALIDATED. If the entity was observed at or after `at`, the removal
+        is stale and ignored. An unknown entity_id records the removal time
+        only, so an older upsert arriving later is ignored. A strictly newer
+        upsert_entity reinstates the entity; its edges come back through fresh
+        observations. Returns one summary change (kind ENTITY_REMOVED);
+        changed=True only if an edge was invalidated."""
     @abstractmethod
     def get_entity(self, entity_id: str) -> Entity | None: ...
 
