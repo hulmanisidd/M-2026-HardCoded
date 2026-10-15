@@ -34,6 +34,7 @@ class RemediationRecommendation(ContractModel):
     estimated_risk_reduction: float | None = None
     assumptions: list[str] = Field(default_factory=list)
     verification_status: str = VerificationStatus.PROPOSED
+    plan_id: str | None = None
 
 
 class RemediationPlan(ContractModel):
