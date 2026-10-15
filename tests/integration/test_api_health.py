@@ -9,11 +9,31 @@ def test_health_never_applies_changes():
     assert r.status_code == 200 and r.json()["applied_to_cloud"] is False
 
 
-def test_scenarios_lists_all_eight_with_sidecar_flag():
-    data = client.get("/api/scenarios").json()
-    assert len(data) == 8
-    flags = {s["scenario_id"]: s["has_access_requirements"] for s in data}
-    assert flags["scenario_08_access_rerouting"] is True
+
+def test_scenarios_list_expected_ids_and_access_requirement_flags():
+    response = client.get("/api/scenarios")
+    assert response.status_code == 200
+
+    data = response.json()
+
+    expected_access_requirements = {
+        "scenario_01_passrole_escalation": False,
+        "scenario_02_role_chain": False,
+        "scenario_03_deny_and_conditions": False,
+        "scenario_04_policy_self_edit": False,
+        "scenario_05_enterprise_multihop": False,
+        "scenario_06_privesc_toolkit": False,
+        "scenario_07_exposed_vs_defended": False,
+        "scenario_08_access_rerouting": True,
+        "scenario_09_pipeline_hardening": True,
+    }
+
+    actual_access_requirements = {
+        scenario["scenario_id"]: scenario["has_access_requirements"]
+        for scenario in data
+    }
+
+    assert actual_access_requirements == expected_access_requirements
 
 
 def test_graph_and_paths_for_scenario_01():
