@@ -5,11 +5,11 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { X } from 'lucide-react'
-import { getGraph, getOverlays, getPaths, getScenarios } from './api'
+import { getGraph, getOverlays, getPaths, getScenarios, simulateRemediation } from './api'
 import { layout } from './layout'
 import { edgeTypes, nodeTypes, styleOf, TYPE_STYLE, type CircleData } from './graphParts'
 import type {
-  GraphEdge, GraphNode, GraphResponse, OverlaysResponse, PathsResponse, ScenarioSummary,
+  GraphEdge, GraphNode, GraphResponse, OverlaysResponse, PathsResponse, ScenarioSummary, SimulationResponse,
 } from './types'
 
 const LAYER = {
@@ -60,6 +60,9 @@ export default function App() {
   const [paths, setPaths] = useState<PathsResponse | null>(null)
   const [overlays, setOverlays] = useState<OverlaysResponse | null>(null)
   const [state, setState] = useState<Load>('loading')
+  const [sim, setSim] = useState<SimulationResponse | null>(null)
+  const [simBusy, setSimBusy] = useState(false)
+  const [simError, setSimError] = useState('')
   const [error, setError] = useState('')
   const [layers, setLayers] = useState<Record<LayerKey, boolean>>({ attack: false, fix: false, backup: false })
   const [view, setView] = useState<'overlay' | 'focus'>('overlay')
@@ -85,7 +88,7 @@ export default function App() {
     if (!scenarioId) return
     let cancelled = false
     setState('loading'); setGraph(null); setPaths(null); setOverlays(null)
-    setFocus(null); setSel(null); setHoverId(null)
+    setFocus(null); setSel(null); setHoverId(null); setSim(null); setSimError('')
     Promise.all([getGraph(scenarioId), getPaths(scenarioId), getOverlays(scenarioId)])
       .then(([g, p, o]) => {
         if (cancelled) return
@@ -231,6 +234,18 @@ export default function App() {
     return { rfNodes, rfEdges: [...plain, ...painted] }
   }, [graph, visibleEdges, positions, deg, focusOnly, hoverNbrs, hoverId, layerActive, layerNodes,
       layerEdges, layers.attack, entryIds, targetIds, sel, focus])
+
+  const runSim = async () => {
+    setSimBusy(true); setSimError('')
+    try {
+      const ids = focus?.layer === 'fix' ? [focus.id] : null
+      setSim(await simulateRemediation(scenarioId, ids))
+    } catch (e) {
+      setSim(null); setSimError(String(e))
+    } finally {
+      setSimBusy(false)
+    }
+  }
 
   const toggleLayer = (k: LayerKey) => {
     setLayers((l) => ({ ...l, [k]: !l[k] }))
@@ -455,6 +470,13 @@ export default function App() {
                         </button>
                       )
                     })}
+                    {k === 'fix' && list.length > 0 && (
+                      <button onClick={runSim} disabled={simBusy}
+                        className="mt-1 w-full rounded-2xl bg-purple-600 px-3 py-2 text-xs font-semibold text-white shadow transition hover:bg-purple-700 disabled:opacity-60">
+                        {simBusy ? 'Simulating…' : focus?.layer === 'fix' ? 'Simulate this fix' : 'Simulate all fixes'}
+                      </button>
+                    )}
+                    {k === 'fix' && simError && <p className="mt-1.5 text-[11px] text-rose-700">{simError}</p>}
                     {k === 'backup' && lost.map((l) => (
                       <button key={l.id} onClick={() => l.node_ids?.[0] && setSel({ kind: 'node', id: l.node_ids[0] })}
                         className="mb-1.5 block w-full rounded-2xl bg-amber-500/12 p-2.5 text-left transition hover:bg-amber-500/20">
@@ -538,6 +560,71 @@ export default function App() {
             <div className="pointer-events-auto w-full rounded-2xl bg-amber-100/90 p-3 text-xs text-amber-900 shadow-lg backdrop-blur">
               {graph.warnings.length} ingestion warning(s). <details><summary className="cursor-pointer">Show</summary>
                 <pre className="mt-1 whitespace-pre-wrap text-[10px]">{graph.warnings.join('\n')}</pre></details>
+            </div>
+          )}
+          {sim && (
+            <div className={`${card} pointer-events-auto min-h-0 w-full overflow-auto p-4`}>
+              <div className="flex items-start justify-between gap-2">
+                <div>
+                  <Eyebrow>Simulation</Eyebrow>
+                  <div className="mt-1 text-[15px] font-semibold tracking-tight text-slate-900">
+                    {sim.fixes_simulated.length} fix{sim.fixes_simulated.length === 1 ? '' : 'es'} simulated
+                  </div>
+                </div>
+                <button onClick={() => setSim(null)} className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-900/5"><X size={15} /></button>
+              </div>
+              <div className="mt-3 rounded-2xl bg-amber-500/15 p-2.5 text-[11px] leading-snug text-amber-900">
+                <b>Human approval required.</b> {sim.approval.reason} Nothing is applied to AWS ({sim.execution_mode.toLowerCase().replace('_', ' ')}).
+              </div>
+              <div className="mt-4 grid grid-cols-3 text-center">
+                {[['before', sim.paths.before], ['removed', sim.paths.removed.length], ['residual', sim.paths.residual.length]].map(([k, v]) => (
+                  <div key={k}>
+                    <div className="text-xl font-semibold tracking-tight">{v}</div>
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-400">{k}</div>
+                  </div>
+                ))}
+              </div>
+              {sim.paths.residual_is_lower_bound && (
+                <p className="mt-2 rounded-xl bg-rose-100/90 p-2 text-[11px] text-rose-900">
+                  Search was truncated, so residual paths are a lower bound. Zero residual is not proof of safety.
+                </p>
+              )}
+              {sim.paths.removed.length > 0 && (
+                <>
+                  <div className="mt-4"><Eyebrow>Removed ({sim.paths.removed.length})</Eyebrow></div>
+                  <div className="mt-1.5 space-y-1">
+                    {sim.paths.removed.map((p) => <div key={p.path_id} className="rounded-xl bg-emerald-500/10 p-2 text-[11px] text-emerald-900">{p.route}</div>)}
+                  </div>
+                </>
+              )}
+              {sim.paths.residual.length > 0 && (
+                <>
+                  <div className="mt-4"><Eyebrow>Still reachable ({sim.paths.residual.length})</Eyebrow></div>
+                  <div className="mt-1.5 space-y-1">
+                    {sim.paths.residual.map((p) => <div key={p.path_id} className="rounded-xl bg-rose-500/10 p-2 text-[11px] text-rose-900">{p.route}</div>)}
+                  </div>
+                </>
+              )}
+              <div className="mt-4"><Eyebrow>Legitimate access</Eyebrow></div>
+              {!sim.access.requirements_loaded && <p className="mt-1.5 text-[11px] text-slate-600">No access requirements for this scenario, so impact was not checked.</p>}
+              <div className="mt-1.5 space-y-1">
+                {sim.access.preserved_via_backup.map((a) => (
+                  <div key={a.principal + a.resource} className="rounded-xl bg-emerald-500/10 p-2 text-[11px] text-emerald-900">
+                    <b>Preserved:</b> {a.principal} → {a.resource}<br />via {a.route}
+                  </div>
+                ))}
+                {sim.access.lost.map((a) => (
+                  <div key={a.principal + a.resource} className="rounded-xl bg-amber-500/15 p-2 text-[11px] text-amber-900">
+                    <b>Lost:</b> {a.principal} → {a.resource}<br />{a.reason}
+                  </div>
+                ))}
+                {sim.access.requirements_loaded && sim.access.preserved_via_backup.length + sim.access.lost.length === 0 &&
+                  <p className="text-[11px] text-slate-600">No listed access is affected by these fixes.</p>}
+              </div>
+              {sim.warnings.length > 0 && (
+                <ul className="ml-4 mt-3 list-disc text-[10px] text-slate-500">{sim.warnings.map((w) => <li key={w}>{w}</li>)}</ul>
+              )}
+              <div className="mt-3 font-mono text-[10px] text-slate-400">{sim.run_id} · {sim.graph_version}</div>
             </div>
           )}
           {inspector && <div key={sel?.kind + (sel?.id ?? '')} className={`${card} pointer-events-auto min-h-0 w-full overflow-auto p-4`}>{inspector}</div>}

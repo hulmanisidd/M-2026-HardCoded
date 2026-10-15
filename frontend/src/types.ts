@@ -90,3 +90,31 @@ export interface OverlaysResponse {
   backup_routes: Overlay[]
   access_lost: Overlay[]
 }
+
+export interface SimPath {
+  path_id: string
+  node_ids: string[]
+  edge_ids: string[]
+  route: string
+  feasibility: string
+}
+
+export interface SimulationResponse {
+  run_id: string
+  scenario_id: string
+  graph_version: string
+  execution_mode: string
+  applied_to_cloud: boolean
+  fixes_simulated: { id: string; label: string; edge_ids: string[] }[]
+  cut_edge_ids: string[]
+  search_truncated: boolean
+  paths: { before: number; removed: SimPath[]; residual: SimPath[]; residual_is_lower_bound: boolean }
+  access: {
+    requirements_loaded: boolean
+    preserved_via_backup: { principal: string; resource: string; route: string; replaces: string }[]
+    lost: { principal: string; resource: string; reason: string }[]
+    note: string
+  }
+  approval: { requires_human_approval: boolean; status: string; reason: string }
+  warnings: string[]
+}
