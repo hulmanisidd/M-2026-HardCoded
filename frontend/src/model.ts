@@ -122,3 +122,18 @@ export const bestLikelihood = (paths: AttackPath[]): number | null => {
 
 export const fmtScore = (x: number | null) => (x === null ? 'unknown' : x.toFixed(2))
 export const relLabel = (r: string) => r.replace(/_/g, ' ')
+
+
+export function backupsForFix(m: Model, fix: Fix): Overlay[] {
+  return m.backups.filter(
+    (backup) => !backup.edge_ids.some((id) => fix.edge_ids.includes(id)),
+  )
+}
+
+export function lostForFix(m: Model, _fix: Fix): Overlay[] {
+  return m.accessLost
+}
+
+export function routeText(route: Overlay): string {
+  return route.label.replace(/^Backup \| /, '')
+}
