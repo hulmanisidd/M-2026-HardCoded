@@ -151,7 +151,7 @@ export default function App() {
       <main className="main">
         <div className="stage">
           <GraphView
-            key={`${scenarioId}|${mode}|${showReroute}`}
+            key={`${scenarioId}|${mode}|${showReroute}|${selFix ?? ''}`}
             nodes={visibleNodes} layoutEdges={layoutEdges} edges={drawnEdges} model={model}
             selectedNodeId={selNode} selectedEdgeId={selEdge} attackerId={attacker}
             focusNodes={focus.nodes} focusEdges={focus.edges} compromised={compromised} search={search}

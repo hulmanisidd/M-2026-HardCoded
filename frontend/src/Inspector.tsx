@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { styleOf } from './style'
-import { bestLikelihood, bestRisk, compromisedFrom, fmtScore, nameOf, relLabel, remediationFor, routesThrough } from './model'
+import { backupsForFix, bestLikelihood, bestRisk, compromisedFrom, fmtScore, lostForFix, nameOf, relLabel, remediationFor, routeText, routesThrough } from './model'
 import type { Model } from './model'
 import type { AttackPath, PathsResponse } from './types'
 
@@ -243,6 +243,8 @@ function CompromisedPanel({ p }: { p: Props }) {
                   <span className="arrow">→</span> <Chip m={m} id={edge.target_id} onNode={p.onNode} />
                 </div>
               )}
+              {backupsForFix(m, fix).map((b) => (  <p className="note" key={b.id}>↪ Access keeps working via: <b>{routeText(b)}</b></p>))}
+              {lostForFix(m, fix).map((a) => (  <div className="warn small" key={a.id}>    ⚠ Breaks {a.label.replace('No verified backup | ', '')}: no verified backup found    {a.note.includes('depth-limited') ? ' (search was depth-limited)' : ''}.  </div>))}
               <button className="btn" onClick={() => p.onFix(p.selFix === fix.id ? null : fix.id)}>
                 {p.selFix === fix.id ? 'Hide on map' : 'Show on map'}
               </button>
