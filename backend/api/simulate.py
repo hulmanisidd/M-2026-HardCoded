@@ -10,7 +10,7 @@ import export_neo4j_green as exp
 from backend.paths import discover_paths
 from contracts import PathOptions
 
-from . import overlays, service
+from . import narrative, overlays, service
 
 MODE = "SIMULATION_ONLY"
 val = service.val
@@ -112,7 +112,7 @@ def simulate(scenario_id: str, fix_ids: list[str] | None) -> dict:
 
     run_id = "run_" + hashlib.sha256(
         f"{scenario_id}|{snap.version}|{','.join(cut)}".encode()).hexdigest()[:12]
-    return {
+    result = {
         "run_id": run_id, "scenario_id": scenario_id, "graph_version": snap.version,
         "execution_mode": MODE, "applied_to_cloud": False,
         "fixes_simulated": [{"id": f["id"], "label": f["label"], "edge_ids": f["edge_ids"]} for f in chosen],
@@ -128,3 +128,5 @@ def simulate(scenario_id: str, fix_ids: list[str] | None) -> dict:
                                "is not available yet."},
         "warnings": warnings,
     }
+    result["explanation"] = narrative.explain_simulation(result)
+    return result

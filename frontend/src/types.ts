@@ -85,3 +85,26 @@ export interface OverlaysResponse {
   backup_routes?: Overlay[]
   access_lost?: Overlay[]
 }
+
+export type Verdict = 'GOOD' | 'NEEDS_REVIEW' | 'PARTIAL' | 'INEFFECTIVE' | 'UNVERIFIED'
+
+// Plain-language view of a simulation run (backend/api/narrative.py). Wording only, no new numbers.
+export interface Explanation {
+  verdict: Verdict
+  verdict_label: string
+  headline: string
+  blocked: string[]
+  still_open: string[]
+  side_effects: string[]
+  kept: string[]
+  cautions: string[]
+  approval: string
+  next_steps: string[]
+}
+
+export interface SimulationResponse {
+  run_id: string
+  fixes_simulated: { id: string; label: string }[]
+  paths: { before: number; removed: { route: string }[]; residual: { route: string }[] }
+  explanation: Explanation
+}

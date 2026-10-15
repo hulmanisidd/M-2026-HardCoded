@@ -122,12 +122,13 @@ export const bestLikelihood = (paths: AttackPath[]): number | null => {
 
 export const fmtScore = (x: number | null) => (x === null ? 'unknown' : x.toFixed(2))
 export const relLabel = (r: string) => r.replace(/_/g, ' ')
+
 const stepsOf = (text: string, re: RegExp) => {
   const hit = re.exec(text)
   return hit ? hit[1].split('->').map((s) => s.trim()) : []
 }
 
-// True when the route (as a list of names) passes through one of the fix's cut edges.
+// True when the route passes through one of the fix's cut edges.
 const crosses = (m: Model, fix: Fix, steps: string[]) =>
   fix.edge_ids.some((id) => {
     const e = m.edgeById.get(id)
@@ -140,12 +141,16 @@ const crosses = (m: Model, fix: Fix, steps: string[]) =>
 /** Backup routes that replace a primary route this fix cuts. */
 export const backupsForFix = (m: Model, fix: Fix): Overlay[] =>
   m.backups.filter(
-    (b) => !b.edge_ids.some((id) => fix.edge_ids.includes(id))
-      && crosses(m, fix, stepsOf(b.note, /Replaces:\s*([^.]*)\./)),
+    (b) =>
+      !b.edge_ids.some((id) => fix.edge_ids.includes(id)) &&
+      crosses(m, fix, stepsOf(b.note, /Replaces:\s*([^.]*)\./)),
   )
 
 /** Access this fix would break with no verified backup. */
 export const lostForFix = (m: Model, fix: Fix): Overlay[] =>
-  m.accessLost.filter((a) => crosses(m, fix, stepsOf(a.note, /primary route \(([^)]*)\)/)))
+  m.accessLost.filter((a) =>
+    crosses(m, fix, stepsOf(a.note, /primary route \(([^)]*)\)/)),
+  )
 
-export const routeText = (o: Overlay) => /Route:\s*([^.]*)\./.exec(o.note)?.[1]?.trim() ?? o.label
+export const routeText = (o: Overlay) =>
+  /Route:\s*([^.]*)\./.exec(o.note)?.[1]?.trim() ?? o.label

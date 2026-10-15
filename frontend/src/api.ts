@@ -1,4 +1,4 @@
-import type { GraphResponse, OverlaysResponse, PathsResponse, ScenarioSummary } from './types'
+import type { GraphResponse, OverlaysResponse, PathsResponse, ScenarioSummary, SimulationResponse } from './types'
 
 const API = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
@@ -20,3 +20,15 @@ export async function getOverlays(id: string): Promise<OverlaysResponse | null> 
     return null
   }
 }
+
+// fixIds omitted = simulate every proposed fix. Simulation only: nothing is applied to AWS.
+export async function simulateFixes(id: string, fixIds?: string[]): Promise<SimulationResponse> {
+  const r = await fetch(`${API}/api/scenarios/${id}/simulate-remediation`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ fix_ids: fixIds ?? null }),
+  })
+  if (!r.ok) throw new Error(`${r.status} ${r.statusText}`)
+  return r.json() as Promise<SimulationResponse>
+}
+

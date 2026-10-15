@@ -21,6 +21,50 @@ def _lost(key: str, label: str, node_ids: list[str], note: str) -> dict:
             "status": "no_verified_backup", "note": note}
 
 
+_ACTION_TEXT = {  # action_type -> (short label template, what the change does)
+    "restrict_role_trust": ("Stop {src} from assuming {dst}", "Edit the trust policy of {dst} so {src} can no longer assume it"),
+    "remove_pass_role": ("Stop {src} from passing {dst}", "Remove the permission that lets {src} pass the role {dst} to a service"),
+    "remove_policy_modification": ("Stop {src} from editing {dst}", "Remove the permission that lets {src} change {dst}"),
+    "remove_read_permission": ("Stop {src} from reading {dst}", "Remove {src}'s read access to {dst}"),
+    "remove_write_permission": ("Stop {src} from writing to {dst}", "Remove {src}'s write access to {dst}"),
+    "remove_decrypt_permission": ("Stop {src} from decrypting with {dst}", "Remove {src}'s permission to decrypt with {dst}"),
+    "remove_invoke_permission": ("Stop {src} from invoking {dst}", "Remove {src}'s permission to invoke {dst}"),
+    "remove_group_membership": ("Remove {src} from {dst}", "Take {src} out of the group {dst}"),
+    "detach_policy": ("Detach {dst} from {src}", "Detach the policy {dst} from {src}"),
+}
+
+
+def _short(arn: str) -> str:
+    return str(arn).rsplit("/", 1)[-1].rsplit(":", 1)[-1]
+
+
+def _fix_text(f: dict, risk_before) -> tuple[str, str]:
+    """Plain-language label and note for one proposed fix (no model jargon).
+
+    Unknown action types get a generic but readable sentence built from the type name, so a new
+    kind of fix never shows raw model jargon or crashes.
+    """
+    action = str(f.get("action_type", "change"))
+    tpl = _ACTION_TEXT.get(action)
+    src, dst = _short(f.get("src", "?")), _short(f.get("dst", "?"))
+    n = f.get("blocks_paths", 0)
+    left = f.get("paths_left_if_only_this")
+    pct = ""
+    if risk_before and f.get("risk_reduction") is not None:
+        pct = f" (about {round(100 * f['risk_reduction'] / risk_before)}% of the total route risk)"
+    if tpl is None:
+        what = action.replace("_", " ")
+        label = f.get("label") or f"Apply '{what}' between {src} and {dst}"
+        what_does = f"Apply the change '{what}' between {src} and {dst}"
+        tpl_label = label
+    else:
+        what_does = tpl[1].format(src=src, dst=dst)
+        tpl_label = tpl[0].format(src=src, dst=dst)
+    note = f"{what_does}. On its own this closes {n} dangerous route(s){pct}"
+    note += f"; {left} would still be open." if left is not None else "."
+    return tpl_label, note + " Simulation only, nothing is changed in AWS."
+
+
 @lru_cache(maxsize=16)
 def _compute(scenario_id: str) -> dict:
     fixture = service._fixture(scenario_id)          # raises UnknownScenario for bad ids
@@ -48,13 +92,11 @@ def _compute(scenario_id: str) -> dict:
             if eid not in known_edges:
                 warnings.append(f"Fix {f['fix_id']} cuts edge {eid}, which is not in the API graph; skipped.")
                 continue
+            label, note = _fix_text(f, (summ or {}).get("before"))
             fixes.append({
-                "id": f["fix_id"], "label": f["label"], "edge_ids": [eid],
+                "id": f["fix_id"], "label": label, "edge_ids": [eid],
                 "status": "proposed_partial_search" if truncated else "proposed",
-                "note": (f"{f['action_type'].replace('_', ' ')}: blocks {f['blocks_paths']} path(s); "
-                         f"risk reduction {f['risk_reduction']}; "
-                         f"{f['paths_left_if_only_this']} path(s) left if only this fix is applied. "
-                         "Simulation only, nothing is changed in AWS."),
+                "note": note,
             })
 
         if summ:

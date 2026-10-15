@@ -2,11 +2,18 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from . import extras, overlays, service, simulate
+from . import extras, narrative, overlays, service, simulate
 
 app = FastAPI(title="HardCoded NHI API")
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"],
-                   allow_methods=["GET", "POST"], allow_headers=["*"])
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "https://hard-coded.vercel.app",
+    ],
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
 
 
 def _guard(fn, scenario_id: str):
@@ -80,3 +87,13 @@ def get_run(run_id: str):
     if run is None:
         raise HTTPException(404, f"unknown run (runs are kept in memory only): {run_id}")
     return run
+
+
+@app.get("/api/runs/{run_id}/explanation")
+def get_run_explanation(run_id: str):
+    """Plain-language view of a stored run. Deterministic templates only (no LLM)."""
+    run = simulate.get_run(run_id)
+    if run is None:
+        raise HTTPException(404, f"unknown run (runs are kept in memory only): {run_id}")
+    expl = run.get("explanation") or narrative.explain_simulation(run)
+    return {"run_id": run_id, "explanation": expl, "text": narrative.to_text(expl)}

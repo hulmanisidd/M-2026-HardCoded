@@ -3,6 +3,7 @@ import { styleOf } from './style'
 import { backupsForFix, bestLikelihood, bestRisk, compromisedFrom, fmtScore, lostForFix, nameOf, relLabel, remediationFor, routeText, routesThrough } from './model'
 import type { Model } from './model'
 import type { AttackPath, PathsResponse } from './types'
+import SimulationCard from './SimulationCard'
 
 const SCORE_NOTE = 'Relative route score from 0 to 1 (how easy the route looks under the model). Not a probability of attack.'
 
@@ -308,6 +309,7 @@ function Overview({ p }: { p: Props }) {
         {m.attackPaths.length} attack route{m.attackPaths.length === 1 ? '' : 's'} from {entries.length} attack node
         {entries.length === 1 ? '' : 's'}. {m.blockedCount > 0 && `${m.blockedCount} blocked route(s) are not counted.`}
       </p>
+      {m.fixesAvailable && <SimulationCard scenarioId={p.paths.scenario_id} />}
       <ul className="howto">
         <li>Click an <b>attack node</b> (red ring with !) to see everything it compromises.</li>
         <li>Click a <b>compromised node</b> to see how to fix it.</li>
