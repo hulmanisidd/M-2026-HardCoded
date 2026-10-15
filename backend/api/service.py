@@ -5,7 +5,8 @@ from pathlib import Path
 
 from backend.ingestion.snapshot import build_snapshot_from_file
 from backend.paths import discover_paths
-from contracts import PathOptions
+from backend.remediation.scoring import rank_paths
+from contracts import Criticality, GraphSnapshot, PathOptions
 
 ROOT = Path(__file__).resolve().parents[2]
 ORG = ROOT / "fixtures" / "organization"
@@ -65,6 +66,20 @@ def graph(scenario_id: str) -> dict:
             "warnings": list(built.warnings), "nodes": nodes, "edges": edges}
 
 
+def _scores(snap, found, targets) -> dict:
+    """P4 relative route scores per path_id.
+
+    The ingested data has no criticality, so for SCORING ONLY the targets are treated as CRITICAL
+    (same rule as export_neo4j_green.py). Without that, P4 returns no score at all. The likelihood is a
+    relative route score, not a probability.
+    """
+    tset = set(targets)
+    ents = tuple(n.model_copy(update={"criticality": Criticality.CRITICAL}) if n.entity_id in tset else n
+                 for n in snap.entities)
+    scored = GraphSnapshot(version=snap.version, created_at=snap.created_at, entities=ents, edges=snap.edges)
+    return {a.path_id: a for a in rank_paths(list(found), scored)}
+
+
 def paths(scenario_id: str) -> dict:
     snap = _build(scenario_id).snapshot
     entries = [n.entity_id for n in snap.entities if val(n.entity_type) in ENTRY_TYPES]
@@ -73,6 +88,18 @@ def paths(scenario_id: str) -> dict:
                if e.target_id in admin and val(e.relation_type) == "has_policy"]
     res = discover_paths(snap, entries, targets, PathOptions(include_blocked=True))
     st = res.stats
+    scores = _scores(snap, res.paths, targets)
+
+    def row(p):
+        a = scores.get(p.path_id)
+        return {**p.model_dump(mode="json"), "feasibility": val(p.feasibility_status),
+                "likelihood_score": a.likelihood_score if a else None,
+                "impact_score": a.impact_score if a else None,
+                "risk_score": a.risk_score if a else None,
+                "confidence": a.confidence if a else "unknown",
+                "score_reasons": list(a.reasons) if a else [],
+                "score_unknowns": list(a.unknowns) if a else []}
+
     return {
         "scenario_id": scenario_id, "graph_version": snap.version,
         "search": {"max_depth": 5, "max_paths": 1000, "truncated": st.truncated,
@@ -81,7 +108,8 @@ def paths(scenario_id: str) -> dict:
                    "unknown_target_ids": list(st.unknown_target_ids)},
         "assumptions": ["Entry points = users, EC2 instances, external principals (heuristic).",
                         "Targets = holders of AdministratorAccess (heuristic, not from metadata).",
+                        "Scores are relative route scores (0 to 1), not probabilities. Targets are treated "
+                        "as CRITICAL for scoring only, because the data has no criticality yet.",
                         "Paths are potential routes under the model, not incident evidence."],
-        "paths": [{**p.model_dump(mode="json"), "feasibility": val(p.feasibility_status)}
-                  for p in res.paths],
+        "paths": [row(p) for p in res.paths],
     }
