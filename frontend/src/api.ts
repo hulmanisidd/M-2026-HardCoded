@@ -1,5 +1,6 @@
 import type {
-  GraphResponse, OverlaysResponse, PathsResponse, ScenarioSummary, SimulationResponse,
+  GraphResponse, HealthResponse, OverlaysResponse, PathsResponse, PipelineResponse,
+  ScenarioSummary, SimulationResponse,
 } from './types'
 
 const API = 'http://localhost:8000'
@@ -32,4 +33,21 @@ export async function simulateRemediation(id: string, fixIds: string[] | null): 
   })
   if (!r.ok) throw new Error(`${r.status} ${r.statusText}`)
   return r.json() as Promise<SimulationResponse>
+}
+
+// Both return null on failure: the UI shows an "unavailable" state instead of breaking.
+export async function getHealth(): Promise<HealthResponse | null> {
+  try {
+    return await get<HealthResponse>('/api/health')
+  } catch {
+    return null
+  }
+}
+
+export async function getPipeline(id: string): Promise<PipelineResponse | null> {
+  try {
+    return await get<PipelineResponse>(`/api/scenarios/${id}/pipeline`)
+  } catch {
+    return null
+  }
 }

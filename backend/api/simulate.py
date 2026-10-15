@@ -20,6 +20,20 @@ class UnknownFix(Exception):
     pass
 
 
+# In-memory only: runs are lost when the API restarts. Nothing is persisted or applied.
+_RUNS: dict[str, dict] = {}
+
+
+def remember(result: dict) -> None:
+    _RUNS[result["run_id"]] = result
+    while len(_RUNS) > 50:
+        _RUNS.pop(next(iter(_RUNS)))
+
+
+def get_run(run_id: str) -> dict | None:
+    return _RUNS.get(run_id)
+
+
 def _search(snap):
     entries = [n.entity_id for n in snap.entities if val(n.entity_type) in service.ENTRY_TYPES]
     admin = {n.entity_id for n in snap.entities if n.name == "AdministratorAccess"}

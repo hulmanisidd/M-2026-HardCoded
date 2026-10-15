@@ -118,3 +118,35 @@ export interface SimulationResponse {
   approval: { requires_human_approval: boolean; status: string; reason: string }
   warnings: string[]
 }
+
+export interface HealthResponse {
+  status: string
+  mode: string
+  neo4j: string
+  applied_to_cloud: boolean
+}
+
+export interface PipelineStage {
+  key: string
+  label: string
+  count: number | null
+  unit: string
+  detail: string
+  warnings: string[]
+}
+
+export interface PipelineResponse {
+  scenario_id: string
+  graph_version: string
+  stages: PipelineStage[]
+  neo4j: {
+    configured: boolean
+    mode: string
+    explanation: string
+    would_write: {
+      nodes: number
+      relationships_by_type: Record<string, number>
+      overlays: Record<string, number>
+    }
+  }
+}

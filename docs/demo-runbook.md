@@ -104,13 +104,54 @@ For a scenario where rerouting returns `NO_VALID_BACKUP` (or the search is trunc
 - [ ] The UI never shows `BACKUP_RECOMMENDED` for a truncated search (fail closed)
 - [ ] ATTACK_PATH, FIX and BACKUP_ROUTE stay visually and conceptually separate
 
-## 5. Sign-off
+## 5. Overlays, simulation and pipeline (API)
+
+With the API running (section 3), in PowerShell:
+
+```powershell
+$u = "http://localhost:8000/api/scenarios/scenario_08_access_rerouting"
+Invoke-RestMethod "$u/overlays" | ConvertTo-Json -Depth 6
+Invoke-RestMethod "$u/pipeline" | ConvertTo-Json -Depth 6
+Invoke-RestMethod "$u/recommendations" | ConvertTo-Json -Depth 6
+Invoke-RestMethod "$u/access-requirements" | ConvertTo-Json -Depth 6
+$r = Invoke-RestMethod -Method Post -ContentType 'application/json' -Body '{"fix_ids": null}' "$u/simulate-remediation"
+Invoke-RestMethod "http://localhost:8000/api/runs/$($r.run_id)" | ConvertTo-Json -Depth 3
+```
+
+Expected for scenario 08 (all fixes): 3 fixes, 7 paths before, 7 removed, 0 residual, `ana-analyst -> reporting-reader`
+preserved via `reports-gateway`, `ben-billing -> billing-ledger` lost (no verified backup).
+
+Check:
+- [ ] Every response says `applied_to_cloud: false` / `SIMULATION_ONLY`, and recommendations have `requires_human_approval: true`
+- [ ] A truncated search shows `residual_is_lower_bound: true` and no verified backup routes (fail closed)
+- [ ] `/api/runs/<id>` returns the run; an unknown id returns 404 (runs are in memory and lost on restart)
+- [ ] Pipeline stages: fixture, entities, relationships, paths, risk, fix, residual; `neo4j.configured` is false
+
+## 6. UI acceptance (scenario_08_access_rerouting)
+
+- [ ] Layer chips show counts (7 / 3 / 1) on one line each; if the overlays endpoint is down they show `n/a`, not `soon`
+- [ ] Backup layer shows the green route and the amber `ben-billing -> billing-ledger` access-lost card with its reason
+- [ ] Fixes layer: "Simulate all fixes" shows the approval banner (human approval required, nothing applied to AWS), 7 removed, 0 residual, access preserved and lost
+- [ ] One fix selected: "Simulate this fix" shows 2 removed and 5 still reachable
+- [ ] Search box dims non-matching nodes; Enter selects the first match
+- [ ] Filters: node type, relation, path feasibility; "hide admin fan-out" never hides an edge that belongs to a layer
+- [ ] Pipeline button opens the stage timeline and the "what Neo4j is doing" pane
+- [ ] Stop the API: the page shows "Can't reach the API" with a working Retry button
+- [ ] Header shows `neo4j: not configured`; the browser never holds database credentials
+- [ ] Hovering a node dims others without piling up edge labels
+
+## 7. Sign-off
 
 | Check | Result | Notes |
 |---|---|---|
 | pytest: 17 known failures only | | |
 | Exporter summary captured | | |
-| `BACKUP_ROUTE` in scenario 08 output | | |
+| `BACKUP_ROUTE` in scenario 08 output (needs Person 1's sidecar fix) | | |
 | `/api/health` `applied_to_cloud: false` | | |
-| UI loads, banners present | | |
+| Overlays / simulate / pipeline checks (section 5) | | |
+| UI acceptance (section 6) | | |
 | No-valid-backup state shows reason | | |
+
+Known open items owned by others: the exporter sidecar filename (Person 1), rerouting returning `BACKUP_RECOMMENDED`
+on a truncated search (Person 2), missing `scenario_05..08*.edges.json` (Person 2), all paths showing `conditional`,
+owner/approver and NHI context fields (Person 1), `backend/updates/` wiring (not started).

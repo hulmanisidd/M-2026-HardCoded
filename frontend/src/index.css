@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+:root {
+  --font: "SF Pro Display", "SF Pro Text", -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+}
+
+html, body, #root { height: 100%; margin: 0; }
+body {
+  font-family: var(--font);
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  color: #0b1220;
+  letter-spacing: -0.011em;
+  background: #f5f6fa;
+}
+::selection { background: rgba(99, 102, 241, 0.18); }
+
+/* canvas atmosphere */
+.canvas-bg {
+  background:
+    radial-gradient(900px 600px at 12% 8%, rgba(99, 102, 241, 0.07), transparent 60%),
+    radial-gradient(800px 560px at 92% 92%, rgba(16, 185, 129, 0.06), transparent 60%),
+    #f5f6fa;
+}
+
+/* frosted glass */
+.glass {
+  background: rgba(255, 255, 255, 0.72);
+  -webkit-backdrop-filter: blur(26px) saturate(180%);
+  backdrop-filter: blur(26px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  box-shadow:
+    0 1px 1px rgba(15, 23, 42, 0.04),
+    0 10px 30px -8px rgba(15, 23, 42, 0.14),
+    0 24px 60px -24px rgba(15, 23, 42, 0.18);
+}
+
+@keyframes rise { from { opacity: 0; transform: translateY(8px) scale(0.985); } to { opacity: 1; transform: none; } }
+.rise { animation: rise 0.42s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* edges */
+.react-flow__edge-path { transition: opacity 0.25s ease, stroke-width 0.25s ease; }
+.react-flow__node { transition: none; }
+@keyframes flow { to { stroke-dashoffset: -26; } }
+.edge-flow .react-flow__edge-path { stroke-dasharray: 7 6; animation: flow 0.9s linear infinite; }
+.edge-attack .react-flow__edge-path { filter: drop-shadow(0 0 3px rgba(239, 68, 68, 0.5)); }
+.edge-fix .react-flow__edge-path { filter: drop-shadow(0 0 3px rgba(168, 85, 247, 0.45)); }
+.edge-backup .react-flow__edge-path { filter: drop-shadow(0 0 3px rgba(16, 185, 129, 0.45)); }
+
+/* controls + minimap */
+.react-flow__attribution { display: none; }
+.react-flow__controls {
+  box-shadow: 0 10px 30px -8px rgba(15, 23, 42, 0.18), 0 1px 1px rgba(15, 23, 42, 0.04) !important;
+  border-radius: 14px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.72); backdrop-filter: blur(20px) saturate(180%);
+}
+.react-flow__controls-button { background: transparent !important; border: none !important; color: #334155; }
+.react-flow__controls-button:hover { background: rgba(15, 23, 42, 0.06) !important; }
+.react-flow__minimap {
+  border-radius: 14px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 10px 30px -8px rgba(15, 23, 42, 0.18);
+  background: rgba(255, 255, 255, 0.7) !important; backdrop-filter: blur(20px);
+}
+
+/* thin scrollbars */
+* { scrollbar-width: thin; scrollbar-color: rgba(100, 116, 139, 0.3) transparent; }

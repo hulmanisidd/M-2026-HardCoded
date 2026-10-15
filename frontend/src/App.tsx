@@ -5,11 +5,11 @@ import {
 } from '@xyflow/react'
 import '@xyflow/react/dist/style.css'
 import { X } from 'lucide-react'
-import { getGraph, getOverlays, getPaths, getScenarios, simulateRemediation } from './api'
+import { getGraph, getHealth, getOverlays, getPaths, getPipeline, getScenarios, simulateRemediation } from './api'
 import { layout } from './layout'
 import { edgeTypes, nodeTypes, styleOf, TYPE_STYLE, type CircleData } from './graphParts'
 import type {
-  GraphEdge, GraphNode, GraphResponse, OverlaysResponse, PathsResponse, ScenarioSummary, SimulationResponse,
+  GraphEdge, GraphNode, GraphResponse, OverlaysResponse, HealthResponse, PathsResponse, PipelineResponse, ScenarioSummary, SimulationResponse,
 } from './types'
 
 const LAYER = {
@@ -53,6 +53,8 @@ function Chip({ children, tone = 'slate' }: { children: ReactNode; tone?: Tone }
   return <span className={`inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold ${TONES[tone]}`}>{children}</span>
 }
 
+const FANOUT = ['can_assume', 'can_pass_role', 'can_modify_policy']
+
 export default function App() {
   const [scenarios, setScenarios] = useState<ScenarioSummary[]>([])
   const [scenarioId, setScenarioId] = useState('')
@@ -63,6 +65,15 @@ export default function App() {
   const [sim, setSim] = useState<SimulationResponse | null>(null)
   const [simBusy, setSimBusy] = useState(false)
   const [simError, setSimError] = useState('')
+  const [health, setHealth] = useState<HealthResponse | null>(null)
+  const [pipeline, setPipeline] = useState<PipelineResponse | null>(null)
+  const [showPipeline, setShowPipeline] = useState(false)
+  const [query, setQuery] = useState('')
+  const [typeFilter, setTypeFilter] = useState('all')
+  const [relFilter, setRelFilter] = useState('all')
+  const [feasFilter, setFeasFilter] = useState('all')
+  const [hideFanout, setHideFanout] = useState(true)
+  const [reloadKey, setReloadKey] = useState(0)
   const [error, setError] = useState('')
   const [layers, setLayers] = useState<Record<LayerKey, boolean>>({ attack: false, fix: false, backup: false })
   const [view, setView] = useState<'overlay' | 'focus'>('overlay')
@@ -79,24 +90,26 @@ export default function App() {
   }
 
   useEffect(() => {
+    getHealth().then(setHealth)
     getScenarios()
-      .then((d) => { setScenarios(d); setScenarioId(d[0]?.scenario_id ?? '') })
+      .then((d) => { setScenarios(d); setScenarioId((cur) => cur || (d[0]?.scenario_id ?? '')) })
       .catch((e) => { setError(String(e)); setState('error') })
-  }, [])
+  }, [reloadKey])
 
   useEffect(() => {
     if (!scenarioId) return
     let cancelled = false
-    setState('loading'); setGraph(null); setPaths(null); setOverlays(null)
+    setState('loading'); setGraph(null); setPaths(null); setOverlays(null); setPipeline(null)
     setFocus(null); setSel(null); setHoverId(null); setSim(null); setSimError('')
-    Promise.all([getGraph(scenarioId), getPaths(scenarioId), getOverlays(scenarioId)])
-      .then(([g, p, o]) => {
+    setQuery(''); setTypeFilter('all'); setRelFilter('all'); setFeasFilter('all')
+    Promise.all([getGraph(scenarioId), getPaths(scenarioId), getOverlays(scenarioId), getPipeline(scenarioId)])
+      .then(([g, p, o, pl]) => {
         if (cancelled) return
-        setGraph(g); setPaths(p); setOverlays(o); setState('ready')
+        setGraph(g); setPaths(p); setOverlays(o); setPipeline(pl); setState('ready')
       })
       .catch((e) => { if (!cancelled) { setError(String(e)); setState('error') } })
     return () => { cancelled = true }
-  }, [scenarioId])
+  }, [scenarioId, reloadKey])
 
   const nodeById = useMemo(() => new Map(graph?.nodes.map((n) => [n.entity_id, n]) ?? []), [graph])
   const edgeById = useMemo(() => new Map(graph?.edges.map((e) => [e.edge_id, e]) ?? []), [graph])
@@ -124,16 +137,16 @@ export default function App() {
   const lost = overlays?.access_lost ?? []
   const items = useMemo<Item[]>(() => {
     const out: Item[] = []
-    paths?.paths.forEach((p) => out.push({
+    paths?.paths.filter((p) => feasFilter === 'all' || p.feasibility === feasFilter).forEach((p) => out.push({
       layer: 'attack', id: p.path_id, title: p.node_ids.map((id) => nodeById.get(id)?.name ?? id).join(' → '),
       status: p.feasibility, note: p.explanations.join(' '), edge_ids: p.edge_ids,
     }))
     overlays?.fixes.forEach((o) => out.push({ layer: 'fix', id: o.id, title: o.label, status: o.status, note: o.note, edge_ids: o.edge_ids }))
     overlays?.backup_routes.forEach((o) => out.push({ layer: 'backup', id: o.id, title: o.label, status: o.status, note: o.note, edge_ids: o.edge_ids }))
     return out
-  }, [paths, overlays, nodeById])
+  }, [paths, overlays, nodeById, feasFilter])
   const counts: Record<LayerKey, number> = {
-    attack: paths?.paths.length ?? 0, fix: overlays?.fixes.length ?? 0, backup: overlays?.backup_routes.length ?? 0,
+    attack: items.filter((i) => i.layer === 'attack').length, fix: overlays?.fixes.length ?? 0, backup: overlays?.backup_routes.length ?? 0,
   }
 
   const layerEdges = useMemo(() => {
@@ -165,11 +178,22 @@ export default function App() {
   const entryIds = useMemo(() => new Set(paths?.paths.map((p) => p.entry_node_id) ?? []), [paths])
   const targetIds = useMemo(() => new Set(paths?.paths.map((p) => p.target_node_id) ?? []), [paths])
 
+  const adminHolders = useMemo(() => {
+    const admin = new Set(graph?.nodes.filter((n) => n.name === 'AdministratorAccess').map((n) => n.entity_id) ?? [])
+    return new Set(graph?.edges.filter((e) => e.relation_type === 'has_policy' && admin.has(e.target_id)).map((e) => e.source_id) ?? [])
+  }, [graph])
+
   const visibleEdges = useMemo(() => {
     if (!graph) return [] as GraphEdge[]
     if (focusOnly) return graph.edges.filter((e) => layerEdges.has(e.edge_id))
-    return graph.edges.filter((e) => showStructure || e.family !== 'structure')
-  }, [graph, focusOnly, layerEdges, showStructure])
+    return graph.edges.filter((e) => {
+      if (layerEdges.has(e.edge_id)) return true // a layer edge is never hidden by a filter
+      if (!showStructure && e.family === 'structure') return false
+      if (relFilter !== 'all' && e.relation_type !== relFilter) return false
+      if (hideFanout && adminHolders.has(e.source_id) && FANOUT.includes(e.relation_type)) return false
+      return true
+    })
+  }, [graph, focusOnly, layerEdges, showStructure, relFilter, hideFanout, adminHolders])
 
   const hoverNbrs = useMemo(() => {
     if (!hoverId) return null
@@ -180,6 +204,14 @@ export default function App() {
     })
     return s
   }, [hoverId, visibleEdges])
+
+  const q = query.trim().toLowerCase()
+  const matchIds = useMemo(() => {
+    if (!graph || (!q && typeFilter === 'all')) return null
+    return new Set(graph.nodes
+      .filter((n) => (!q || n.name.toLowerCase().includes(q)) && (typeFilter === 'all' || n.entity_type === typeFilter))
+      .map((n) => n.entity_id))
+  }, [graph, q, typeFilter])
 
   const { rfNodes, rfEdges } = useMemo(() => {
     if (!graph) return { rfNodes: [] as Node[], rfEdges: [] as Edge[] }
@@ -193,6 +225,7 @@ export default function App() {
       const p = positions[id] ?? { x: 0, y: 0 }
       let dim = 1
       if (hoverNbrs) dim = hoverNbrs.has(id) ? 1 : 0.4
+      else if (matchIds) dim = matchIds.has(id) ? 1 : 0.2
       else if (layerActive) dim = layerNodes.has(id) ? 1 : 0.3
       const badge = layers.attack ? (targetIds.has(id) ? 'target' : entryIds.has(id) ? 'entry' : null) : null
       const data: CircleData = { e: n, r, dim, selected: sel?.kind === 'node' && sel.id === id, badge }
@@ -233,7 +266,7 @@ export default function App() {
     })
     return { rfNodes, rfEdges: [...plain, ...painted] }
   }, [graph, visibleEdges, positions, deg, focusOnly, hoverNbrs, hoverId, layerActive, layerNodes,
-      layerEdges, layers.attack, entryIds, targetIds, sel, focus])
+      layerEdges, layers.attack, entryIds, targetIds, sel, focus, matchIds])
 
   const runSim = async () => {
     setSimBusy(true); setSimError('')
@@ -366,6 +399,8 @@ export default function App() {
   })()
 
   const presentTypes = graph ? Array.from(new Set(graph.nodes.map((n) => n.entity_type))) : []
+  const relationTypes = graph ? Array.from(new Set(graph.edges.map((e) => e.relation_type))).sort() : []
+  const sel_cls = 'mt-1.5 w-full rounded-xl border border-slate-900/10 bg-white/80 px-2 py-1.5 text-xs outline-none'
   const overlayWarnings = overlays?.warnings ?? []
   const showOverlayNotes = (layers.fix || layers.backup) && overlays !== null
 
@@ -388,8 +423,10 @@ export default function App() {
           >
             <Background variant={BackgroundVariant.Dots} gap={26} size={1.2} color="#d9dde8" />
             <Controls position="bottom-center" orientation="horizontal" showInteractive={false} />
-            <MiniMap pannable zoomable maskColor="rgba(245,246,250,.7)"
-              nodeColor={(n) => styleOf((n.data as CircleData).e.entity_type).color} />
+            <MiniMap pannable zoomable position="bottom-right" maskColor="rgba(245,246,250,.7)"
+              style={{ width: 150, height: 100 }} nodeStrokeWidth={3}
+              nodeColor={(n) => ((n.data as CircleData | undefined)?.e
+                ? styleOf((n.data as CircleData).e.entity_type).color : '#94a3b8')} />
           </ReactFlow>
         )}
       </div>
@@ -404,7 +441,15 @@ export default function App() {
           <div className={`${card} max-w-md p-6`}>
             <div className="text-[15px] font-semibold tracking-tight text-rose-700">Can't reach the API</div>
             <p className="mt-1.5 text-slate-600">{error}. Start it from the repo root with <code>python -m uvicorn backend.api.main:app --port 8000</code>.</p>
+            <button onClick={() => { setError(''); setState('loading'); setReloadKey((k) => k + 1) }}
+              className="mt-3 rounded-2xl bg-slate-900 px-4 py-2 text-xs font-semibold text-white">Retry</button>
           </div>
+        </div>
+      )}
+
+      {state === 'ready' && graph && graph.nodes.length === 0 && (
+        <div className="pointer-events-none absolute inset-0 grid place-items-center">
+          <div className={`${card} px-6 py-3 text-slate-600`}>This scenario has no entities.</div>
         </div>
       )}
 
@@ -424,6 +469,38 @@ export default function App() {
               value={scenarioId} onChange={(e) => setScenarioId(e.target.value)}>
               {scenarios.map((s) => <option key={s.scenario_id} value={s.scenario_id}>{s.scenario_id}</option>)}
             </select>
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search nodes…"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && matchIds) {
+                  const first = [...matchIds][0]
+                  if (first) setSel({ kind: 'node', id: first })
+                }
+              }}
+              className="mt-2 w-full rounded-xl border border-slate-900/10 bg-white/80 px-2.5 py-2 text-xs outline-none focus:ring-2 focus:ring-indigo-400/40" />
+            <details className="mt-2 text-xs text-slate-600">
+              <summary className="cursor-pointer text-slate-500">Filters</summary>
+              <select className={sel_cls} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)}>
+                <option value="all">All node types</option>
+                {presentTypes.map((t) => <option key={t} value={t}>{styleOf(t).label}</option>)}
+              </select>
+              <select className={sel_cls} value={relFilter} onChange={(e) => setRelFilter(e.target.value)}>
+                <option value="all">All relations</option>
+                {relationTypes.map((r) => <option key={r} value={r}>{pretty(r)}</option>)}
+              </select>
+              <select className={sel_cls} value={feasFilter} onChange={(e) => setFeasFilter(e.target.value)}>
+                <option value="all">All path feasibility</option>
+                <option value="feasible_under_model">feasible under model</option>
+                <option value="conditional">conditional</option>
+                <option value="blocked">blocked</option>
+              </select>
+              <label className="mt-2 flex cursor-pointer items-center gap-2">
+                <input type="checkbox" checked={hideFanout} onChange={(e) => setHideFanout(e.target.checked)} />
+                hide admin fan-out edges
+              </label>
+              <p className="mt-1.5 text-[10px] leading-snug text-slate-400">
+                Identity class, owner and environment filters need ownership data that is not available yet.
+              </p>
+            </details>
             {graph && paths && (
               <div className="mt-3.5 grid grid-cols-3 text-center">
                 {[['nodes', graph.nodes.length], ['edges', graph.edges.length], ['paths', paths.paths.length]].map(([k, v]) => (
@@ -506,13 +583,13 @@ export default function App() {
               const on = layers[k] && available[k]
               return (
                 <button key={k} disabled={!available[k]} onClick={() => toggleLayer(k)}
-                  title={available[k] ? '' : 'Backend endpoint not available yet'}
-                  className={`flex items-center gap-2 rounded-2xl px-3.5 py-1.5 text-xs font-medium transition ${
+                  title={available[k] ? '' : 'Overlays unavailable: the /overlays endpoint did not respond'}
+                  className={`flex items-center gap-2 whitespace-nowrap rounded-2xl px-3.5 py-1.5 text-xs font-medium transition ${
                     on ? 'text-white' : available[k] ? 'text-slate-600 hover:bg-slate-900/5' : 'cursor-not-allowed text-slate-300'}`}
                   style={on ? { background: LAYER[k].color, boxShadow: `0 6px 16px -4px ${LAYER[k].color}99` } : undefined}>
                   {LAYER[k].label}
                   <span className={`rounded-full px-1.5 text-[10px] ${on ? 'bg-white/25' : 'bg-slate-900/5 text-slate-500'}`}>
-                    {available[k] ? counts[k] : 'soon'}
+                    {available[k] ? counts[k] : 'n/a'}
                   </span>
                 </button>
               )
@@ -521,15 +598,19 @@ export default function App() {
           <div className={`${card} pointer-events-auto flex p-1.5`}>
             {(['overlay', 'focus'] as const).map((v) => (
               <button key={v} onClick={() => setView(v)}
-                className={`rounded-2xl px-3.5 py-1.5 text-xs font-medium transition ${view === v ? 'bg-slate-900 text-white shadow' : 'text-slate-600 hover:bg-slate-900/5'}`}>
+                className={`whitespace-nowrap rounded-2xl px-3.5 py-1.5 text-xs font-medium transition ${view === v ? 'bg-slate-900 text-white shadow' : 'text-slate-600 hover:bg-slate-900/5'}`}>
                 {v === 'overlay' ? 'Whole map' : 'Focus layer'}
               </button>
             ))}
           </div>
-          <label className={`${card} pointer-events-auto flex cursor-pointer items-center gap-2 px-3.5 py-2.5 text-xs text-slate-600`}>
+          <label className={`${card} pointer-events-auto flex cursor-pointer items-center gap-2 whitespace-nowrap px-3.5 py-2.5 text-xs text-slate-600`}>
             <input type="checkbox" checked={showStructure} onChange={(e) => setShowStructure(e.target.checked)} />
             policies &amp; groups
           </label>
+          <button onClick={() => setShowPipeline((v) => !v)}
+            className={`${card} pointer-events-auto whitespace-nowrap px-3.5 py-2.5 text-xs font-medium ${showPipeline ? 'text-indigo-700' : 'text-slate-600'}`}>
+            Pipeline
+          </button>
         </div>
 
         {/* right column */}
@@ -538,6 +619,14 @@ export default function App() {
             <div className={`${card} pointer-events-auto flex items-center gap-3 px-3.5 py-2 text-[11px] text-slate-600`}>
               <span>version <code className="text-slate-800">{graph.graph_version}</code></span>
               <Chip>{graph.data_mode}</Chip>
+              {health
+                ? <Chip tone={health.neo4j === 'connected' ? 'green' : 'slate'}>neo4j: {pretty(health.neo4j)}</Chip>
+                : <Chip tone="amber">health unknown</Chip>}
+            </div>
+          )}
+          {health && ['unavailable', 'error'].includes(health.neo4j) && (
+            <div className="pointer-events-auto w-full rounded-2xl bg-amber-100/90 p-3 text-xs text-amber-900 shadow-lg backdrop-blur">
+              Neo4j is unavailable. Showing the in-memory fixture graph; nothing is written to the database.
             </div>
           )}
           {paths?.search.truncated && (
@@ -629,6 +718,47 @@ export default function App() {
           )}
           {inspector && <div key={sel?.kind + (sel?.id ?? '')} className={`${card} pointer-events-auto min-h-0 w-full overflow-auto p-4`}>{inspector}</div>}
         </div>
+
+        {showPipeline && (
+          <div className={`${card} pointer-events-auto absolute bottom-16 left-[21rem] right-[21rem] max-h-[45vh] overflow-auto p-4`}>
+            <div className="flex items-center justify-between">
+              <Eyebrow>Pipeline</Eyebrow>
+              <button onClick={() => setShowPipeline(false)} className="rounded-full p-1.5 text-slate-400 transition hover:bg-slate-900/5"><X size={15} /></button>
+            </div>
+            {!pipeline && <p className="mt-2 text-xs text-slate-600">Pipeline details are unavailable from the API.</p>}
+            {pipeline && (
+              <>
+                <div className="mt-2 flex items-stretch gap-1 overflow-x-auto pb-1">
+                  {pipeline.stages.map((st, i) => (
+                    <div key={st.key} className="flex items-center gap-1">
+                      <div className="w-36 shrink-0 rounded-2xl bg-white/70 p-2.5">
+                        <div className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">{st.label}</div>
+                        <div className="mt-0.5 text-lg font-semibold tracking-tight text-slate-900">{st.count ?? '—'}</div>
+                        <div className="text-[10px] text-slate-500">{st.unit}</div>
+                        <div className="mt-1 text-[10px] leading-snug text-slate-600">{st.detail}</div>
+                        {st.warnings.length > 0 && (
+                          <details className="mt-1 text-[10px] text-amber-800">
+                            <summary className="cursor-pointer">{st.warnings.length} warning(s)</summary>
+                            <ul className="ml-3 list-disc">{st.warnings.map((w) => <li key={w}>{w}</li>)}</ul>
+                          </details>
+                        )}
+                      </div>
+                      {i < pipeline.stages.length - 1 && <span className="text-slate-300">→</span>}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3"><Eyebrow>What Neo4j is doing</Eyebrow></div>
+                <p className="mt-1 text-[11px] leading-snug text-slate-600">{pipeline.neo4j.explanation}</p>
+                <div className="mt-2 flex flex-wrap gap-1">
+                  <Chip>{pipeline.neo4j.would_write.nodes} nodes</Chip>
+                  {Object.entries(pipeline.neo4j.would_write.relationships_by_type).map(([k, v]) => <Chip key={k}>{k} {v}</Chip>)}
+                  {Object.entries(pipeline.neo4j.would_write.overlays).map(([k, v]) => <Chip key={k} tone="purple">{k} {v}</Chip>)}
+                </div>
+                <p className="mt-1.5 text-[10px] text-slate-400">Counts the exporter would write for this scenario. Not connected in fixture mode.</p>
+              </>
+            )}
+          </div>
+        )}
 
         {/* legend */}
         {graph && (
