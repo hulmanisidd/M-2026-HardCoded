@@ -1,6 +1,7 @@
-import { Component, useEffect, useState } from 'react'
+import { Component, useEffect, useRef, useState } from 'react'
 import type { ReactNode } from 'react'
 import { getOverlays, simulateFixes } from './api'
+import { resultMatches } from './simKey'
 import type { Fix, SimulationResponse, Verdict } from './types'
 
 const TONE: Record<Verdict, { icon: string; cls: string }> = {
@@ -37,9 +38,13 @@ function SimulationCardInner({ scenarioId }: { scenarioId: string }) {
   const [tech, setTech] = useState(false)
   const [fixes, setFixes] = useState<Fix[]>([])
   const [picked, setPicked] = useState<Set<string>>(new Set())
+  // Bumped on every run and on every scenario change, so a late response from an old request is dropped.
+  const seq = useRef(0)
 
   // Load the proposed fixes so the person can try them one by one. All start selected.
   useEffect(() => {
+    seq.current += 1
+    setRes(null); setErr(null); setTech(false); setBusy(false); setFixes([]); setPicked(new Set())
     let live = true
     getOverlays(scenarioId).then((o) => {
       if (!live || !o) return
@@ -60,16 +65,25 @@ function SimulationCardInner({ scenarioId }: { scenarioId: string }) {
   const allPicked = fixes.length > 0 && picked.size === fixes.length
 
   const run = async () => {
+    const mine = ++seq.current
     setBusy(true)
     setErr(null)
     try {
-      setRes(await simulateFixes(scenarioId, allPicked || fixes.length === 0 ? undefined : [...picked]))
+      const out = await simulateFixes(scenarioId, allPicked || fixes.length === 0 ? undefined : [...picked])
+      if (mine !== seq.current) return // a newer run or a scenario change superseded this one
+      setRes(out)
     } catch (e) {
+      if (mine !== seq.current) return
       setErr(e instanceof Error ? e.message : 'Simulation failed')
     } finally {
-      setBusy(false)
+      if (mine === seq.current) setBusy(false)
     }
   }
+
+  // The result is current only if the backend says it simulated exactly the fixes selected now.
+  // Checked on every render, so unticking a fix marks the old result outdated immediately.
+  const simulatedIds = (res?.fixes_simulated ?? []).map((f) => f.id)
+  const stale = res !== null && fixes.length > 0 && !resultMatches(simulatedIds, picked)
 
   const x = res?.explanation
   const tone = x ? (TONE[x.verdict] ?? TONE.UNVERIFIED) : null
@@ -90,7 +104,14 @@ function SimulationCardInner({ scenarioId }: { scenarioId: string }) {
         {busy ? 'Simulating…' : allPicked || fixes.length <= 1 ? 'Run simulation' : `Simulate ${picked.size} selected fix${picked.size === 1 ? '' : 'es'}`}
       </button>
       {err && <p className="warn">Could not run the simulation: {err}</p>}
-      {x && tone && res && (
+      {res && stale && (
+        <p className="warn" role="status">
+          Results are based on a previous selection ({res.fixes_simulated?.length ?? 0} fix
+          {(res.fixes_simulated?.length ?? 0) === 1 ? '' : 'es'}). Run the simulation again. Route counts and
+          any approval advice are hidden until you do.
+        </p>
+      )}
+      {x && tone && res && !stale && (
         <>
           <div className={`sim-verdict ${tone.cls}`}>
             <span className="sim-icon">{tone.icon}</span>
