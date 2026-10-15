@@ -1,0 +1,43 @@
+{
+  "scenario": "scenario_03_deny_and_conditions",
+  "description": "An explicit Deny blocks erin from role-x; frank's access to role-z depends on an MFA condition we do not evaluate.",
+  "must_exist": [
+    {
+      "source": "erin",
+      "relation": "can_assume",
+      "target": "role-y"
+    },
+    {
+      "source": "frank",
+      "relation": "can_assume",
+      "target": "role-z",
+      "conditions": {
+        "unevaluated_conditions": [
+          "identity_policy"
+        ]
+      }
+    }
+  ],
+  "must_not_exist": [
+    {
+      "source": "erin",
+      "relation": "can_assume",
+      "target": "role-x"
+    },
+    {
+      "source": "erin",
+      "relation": "can_assume",
+      "target": "role-z"
+    },
+    {
+      "source": "frank",
+      "relation": "can_assume",
+      "target": "role-x"
+    },
+    {
+      "source": "frank",
+      "relation": "can_assume",
+      "target": "role-y"
+    }
+  ]
+}
