@@ -1,7 +1,7 @@
-"""Notebook of "which edge is used by which paths".
+"""Notebook of "which edge / node is used by which paths".
 
-When an edge changes we look it up here and redo only the affected paths,
-instead of recomputing everything.
+When a graph fact changes we look it up here and redo only the affected
+paths, instead of recomputing everything.
 """
 from __future__ import annotations
 
@@ -14,6 +14,7 @@ class DependencyIndex:
     def __init__(self) -> None:
         self._paths: dict[str, AttackPath] = {}
         self._by_edge: dict[str, set[str]] = {}
+        self._by_node: dict[str, set[str]] = {}
 
     def register(self, paths: Iterable[AttackPath]) -> None:
         """Add or replace paths. Re-registering the same path_id is safe."""
@@ -23,6 +24,8 @@ class DependencyIndex:
             self._paths[path.path_id] = path
             for edge_id in path.edge_ids:
                 self._by_edge.setdefault(edge_id, set()).add(path.path_id)
+            for node_id in path.node_ids:
+                self._by_node.setdefault(node_id, set()).add(path.path_id)
 
     def remove(self, path_ids: Iterable[str]) -> None:
         for path_id in path_ids:
@@ -35,12 +38,35 @@ class DependencyIndex:
                     users.discard(path_id)
                     if not users:
                         del self._by_edge[edge_id]
+            for node_id in path.node_ids:
+                users = self._by_node.get(node_id)
+                if users is not None:
+                    users.discard(path_id)
+                    if not users:
+                        del self._by_node[node_id]
+
+    def retag(self, graph_version: str) -> None:
+        """Re-stamp every path with `graph_version`.
+
+        Only call this when the caller has proven the change did not touch any
+        indexed path (so the paths are still exactly what discovery would
+        return on the new version).
+        """
+        self.register(
+            p.model_copy(update={"graph_version": graph_version})
+            for p in self.all_paths()
+            if p.graph_version != graph_version
+        )
 
     def paths_using(self, edge_id: str) -> frozenset[str]:
         return frozenset(self._by_edge.get(edge_id, ()))
 
+    def paths_visiting(self, node_id: str) -> frozenset[str]:
+        """Ids of indexed paths that pass through (or end at) this node."""
+        return frozenset(self._by_node.get(node_id, ()))
+
     def affected_paths(self, edge_ids: Iterable[str]) -> tuple[str, ...]:
-        """Sorted path idsthat use ANY of the given edges."""
+        """Sorted path ids that use ANY of the given edges."""
         hit: set[str] = set()
         for edge_id in edge_ids:
             hit |= self._by_edge.get(edge_id, set())
