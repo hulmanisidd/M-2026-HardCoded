@@ -1,0 +1,615 @@
+{
+  "UserDetailList": [
+    {
+      "Path": "/",
+      "UserName": "lambda-dev",
+      "UserId": "AIDALAMBDADEV",
+      "Arn": "arn:aws:iam::111122223333:user/lambda-dev",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "Launch",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "iam:PassRole",
+                "Resource": "arn:aws:iam::111122223333:role/pe-lambda-admin"
+              },
+              {
+                "Effect": "Allow",
+                "Action": "lambda:CreateFunction",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "ec2-dev",
+      "UserId": "AIDAEC2DEV",
+      "Arn": "arn:aws:iam::111122223333:user/ec2-dev",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "Launch",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "iam:PassRole",
+                "Resource": "arn:aws:iam::111122223333:role/pe-ec2-admin"
+              },
+              {
+                "Effect": "Allow",
+                "Action": "ec2:RunInstances",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "glue-dev",
+      "UserId": "AIDAGLUEDEV",
+      "Arn": "arn:aws:iam::111122223333:user/glue-dev",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "Launch",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "iam:PassRole",
+                "Resource": "arn:aws:iam::111122223333:role/pe-glue-admin"
+              },
+              {
+                "Effect": "Allow",
+                "Action": "glue:CreateJob",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "cfn-dev",
+      "UserId": "AIDACFNDEV",
+      "Arn": "arn:aws:iam::111122223333:user/cfn-dev",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "Launch",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "iam:PassRole",
+                "Resource": "arn:aws:iam::111122223333:role/pe-cfn-admin"
+              },
+              {
+                "Effect": "Allow",
+                "Action": "cloudformation:CreateStack",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "ecs-dev",
+      "UserId": "AIDAECSDEV",
+      "Arn": "arn:aws:iam::111122223333:user/ecs-dev",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "Launch",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "iam:PassRole",
+                "Resource": "arn:aws:iam::111122223333:role/pe-ecs-admin"
+              },
+              {
+                "Effect": "Allow",
+                "Action": "ecs:RunTask",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "trust-editor",
+      "UserId": "AIDATRUSTEDITOR",
+      "Arn": "arn:aws:iam::111122223333:user/trust-editor",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "EditTrust",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "iam:UpdateAssumeRolePolicy",
+                "Resource": "arn:aws:iam::111122223333:role/pe-breakglass"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "role-attacher",
+      "UserId": "AIDAROLEATTACHER",
+      "Arn": "arn:aws:iam::111122223333:user/role-attacher",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "AttachToRole",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "iam:AttachRolePolicy",
+                "Resource": "arn:aws:iam::111122223333:role/pe-ops-admin"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "role-putter",
+      "UserId": "AIDAROLEPUTTER",
+      "Arn": "arn:aws:iam::111122223333:user/role-putter",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "PutOnRole",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "iam:PutRolePolicy",
+                "Resource": "arn:aws:iam::111122223333:role/pe-ops-admin"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "user-putter",
+      "UserId": "AIDAUSERPUTTER",
+      "Arn": "arn:aws:iam::111122223333:user/user-putter",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "PutOnUser",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "iam:PutUserPolicy",
+                "Resource": "arn:aws:iam::111122223333:user/pe-root-like"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "user-attacher",
+      "UserId": "AIDAUSERATTACHER",
+      "Arn": "arn:aws:iam::111122223333:user/user-attacher",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "AttachToUser",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "iam:AttachUserPolicy",
+                "Resource": "arn:aws:iam::111122223333:user/pe-root-like"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "group-adder",
+      "UserId": "AIDAGROUPADDER",
+      "Arn": "arn:aws:iam::111122223333:user/group-adder",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "AddToAdmins",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "iam:AddUserToGroup",
+                "Resource": "arn:aws:iam::111122223333:group/pe-admins"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "pe-root-like",
+      "UserId": "AIDAPEROOTLIKE",
+      "Arn": "arn:aws:iam::111122223333:user/pe-root-like",
+      "GroupList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ],
+      "UserPolicyList": []
+    },
+    {
+      "Path": "/",
+      "UserName": "chain-user",
+      "UserId": "AIDACHAINUSER",
+      "Arn": "arn:aws:iam::111122223333:user/chain-user",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "AssumeStone",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": "arn:aws:iam::111122223333:role/pe-stepping-stone"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "harmless-hal",
+      "UserId": "AIDAHARMLESSHAL",
+      "Arn": "arn:aws:iam::111122223333:user/harmless-hal",
+      "GroupList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "ReadOnlyAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/ReadOnlyAccess"
+        }
+      ],
+      "UserPolicyList": []
+    }
+  ],
+  "GroupDetailList": [
+    {
+      "Path": "/",
+      "GroupName": "pe-admins",
+      "GroupId": "AGPAPEADMINS",
+      "Arn": "arn:aws:iam::111122223333:group/pe-admins",
+      "GroupPolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    }
+  ],
+  "RoleDetailList": [
+    {
+      "Path": "/",
+      "RoleName": "pe-lambda-admin",
+      "RoleId": "AROAPELAMBDAADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/pe-lambda-admin",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "lambda.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "pe-ec2-admin",
+      "RoleId": "AROAPEEC2ADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/pe-ec2-admin",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "ec2.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "pe-glue-admin",
+      "RoleId": "AROAPEGLUEADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/pe-glue-admin",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "glue.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "pe-cfn-admin",
+      "RoleId": "AROAPECFNADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/pe-cfn-admin",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "cloudformation.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "pe-ecs-admin",
+      "RoleId": "AROAPEECSADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/pe-ecs-admin",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "ecs-tasks.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "pe-breakglass",
+      "RoleId": "AROAPEBREAKGLASS",
+      "Arn": "arn:aws:iam::111122223333:role/pe-breakglass",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "pe-ops-admin",
+      "RoleId": "AROAPEOPSADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/pe-ops-admin",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "pe-stepping-stone",
+      "RoleId": "AROAPESTEPPINGSTONE",
+      "Arn": "arn:aws:iam::111122223333:role/pe-stepping-stone",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:user/chain-user"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [
+        {
+          "PolicyName": "EditOps",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "iam:PutRolePolicy",
+                "Resource": "arn:aws:iam::111122223333:role/pe-ops-admin"
+              }
+            ]
+          }
+        }
+      ],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "ReadOnlyAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/ReadOnlyAccess"
+        }
+      ]
+    }
+  ],
+  "Policies": [
+    {
+      "PolicyName": "AdministratorAccess",
+      "PolicyId": "ANPAADMINISTRATORACCESS",
+      "Arn": "arn:aws:iam::aws:policy/AdministratorAccess",
+      "PolicyVersionList": [
+        {
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "*",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "PolicyName": "ReadOnlyAccess",
+      "PolicyId": "ANPAREADONLYACCESS",
+      "Arn": "arn:aws:iam::aws:policy/ReadOnlyAccess",
+      "PolicyVersionList": [
+        {
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "s3:Get*",
+                  "s3:List*",
+                  "ec2:Describe*",
+                  "iam:Get*",
+                  "iam:List*",
+                  "logs:Get*"
+                ],
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,574 @@
+{
+  "UserDetailList": [
+    {
+      "Path": "/",
+      "UserName": "ana-analyst",
+      "UserId": "AIDAANAANALYST",
+      "Arn": "arn:aws:iam::111122223333:user/ana-analyst",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "AssumeGateways",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": [
+                  "arn:aws:iam::111122223333:role/analytics-gateway",
+                  "arn:aws:iam::111122223333:role/reports-gateway"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "ben-billing",
+      "UserId": "AIDABENBILLING",
+      "Arn": "arn:aws:iam::111122223333:user/ben-billing",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "AssumeBilling",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": [
+                  "arn:aws:iam::111122223333:role/billing-gateway"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "cat-ci",
+      "UserId": "AIDACATCI",
+      "Arn": "arn:aws:iam::111122223333:user/cat-ci",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "AssumeHubs",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": [
+                  "arn:aws:iam::111122223333:role/ci-hub",
+                  "arn:aws:iam::111122223333:role/legacy-hub"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "contractor-dev",
+      "UserId": "AIDACONTRACTORDEV",
+      "Arn": "arn:aws:iam::111122223333:user/contractor-dev",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "AssumeLegacy",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": [
+                  "arn:aws:iam::111122223333:role/legacy-hub"
+                ]
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "intern-ivy",
+      "UserId": "AIDAINTERNIVY",
+      "Arn": "arn:aws:iam::111122223333:user/intern-ivy",
+      "GroupList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "ReadOnlyAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/ReadOnlyAccess"
+        }
+      ],
+      "UserPolicyList": []
+    }
+  ],
+  "GroupDetailList": [],
+  "RoleDetailList": [
+    {
+      "Path": "/",
+      "RoleName": "analytics-gateway",
+      "RoleId": "AROAANALYTICSGATEWAY",
+      "Arn": "arn:aws:iam::111122223333:role/analytics-gateway",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [
+        {
+          "PolicyName": "Onward",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": [
+                  "arn:aws:iam::111122223333:role/reporting-reader",
+                  "arn:aws:iam::111122223333:role/etl-admin",
+                  "arn:aws:iam::111122223333:role/lake-admin"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "AttachedManagedPolicies": []
+    },
+    {
+      "Path": "/",
+      "RoleName": "reports-gateway",
+      "RoleId": "AROAREPORTSGATEWAY",
+      "Arn": "arn:aws:iam::111122223333:role/reports-gateway",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [
+        {
+          "PolicyName": "Onward",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": [
+                  "arn:aws:iam::111122223333:role/reporting-reader"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "AttachedManagedPolicies": []
+    },
+    {
+      "Path": "/",
+      "RoleName": "reporting-reader",
+      "RoleId": "AROAREPORTINGREADER",
+      "Arn": "arn:aws:iam::111122223333:role/reporting-reader",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "ReadOnlyAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/ReadOnlyAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "etl-admin",
+      "RoleId": "AROAETLADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/etl-admin",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "lake-admin",
+      "RoleId": "AROALAKEADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/lake-admin",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "billing-gateway",
+      "RoleId": "AROABILLINGGATEWAY",
+      "Arn": "arn:aws:iam::111122223333:role/billing-gateway",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [
+        {
+          "PolicyName": "Onward",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": [
+                  "arn:aws:iam::111122223333:role/billing-ledger",
+                  "arn:aws:iam::111122223333:role/finance-admin",
+                  "arn:aws:iam::111122223333:role/treasury-admin"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "AttachedManagedPolicies": []
+    },
+    {
+      "Path": "/",
+      "RoleName": "billing-ledger",
+      "RoleId": "AROABILLINGLEDGER",
+      "Arn": "arn:aws:iam::111122223333:role/billing-ledger",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "ReadOnlyAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/ReadOnlyAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "finance-admin",
+      "RoleId": "AROAFINANCEADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/finance-admin",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "treasury-admin",
+      "RoleId": "AROATREASURYADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/treasury-admin",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "ci-hub",
+      "RoleId": "AROACIHUB",
+      "Arn": "arn:aws:iam::111122223333:role/ci-hub",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [
+        {
+          "PolicyName": "Onward",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": [
+                  "arn:aws:iam::111122223333:role/deploy-target"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "AttachedManagedPolicies": []
+    },
+    {
+      "Path": "/",
+      "RoleName": "legacy-hub",
+      "RoleId": "AROALEGACYHUB",
+      "Arn": "arn:aws:iam::111122223333:role/legacy-hub",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [
+        {
+          "PolicyName": "Onward",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": [
+                  "arn:aws:iam::111122223333:role/deploy-target"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "AttachedManagedPolicies": []
+    },
+    {
+      "Path": "/",
+      "RoleName": "deploy-target",
+      "RoleId": "AROADEPLOYTARGET",
+      "Arn": "arn:aws:iam::111122223333:role/deploy-target",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [
+        {
+          "PolicyName": "Onward",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": [
+                  "arn:aws:iam::111122223333:role/release-admin"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "ReadOnlyAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/ReadOnlyAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "release-admin",
+      "RoleId": "AROARELEASEADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/release-admin",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    }
+  ],
+  "Policies": [
+    {
+      "PolicyName": "AdministratorAccess",
+      "PolicyId": "ANPAADMINISTRATORACCESS",
+      "Arn": "arn:aws:iam::aws:policy/AdministratorAccess",
+      "PolicyVersionList": [
+        {
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "*",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "PolicyName": "ReadOnlyAccess",
+      "PolicyId": "ANPAREADONLYACCESS",
+      "Arn": "arn:aws:iam::aws:policy/ReadOnlyAccess",
+      "PolicyVersionList": [
+        {
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "s3:Get*",
+                  "s3:List*",
+                  "ec2:Describe*",
+                  "iam:Get*",
+                  "iam:List*",
+                  "logs:Get*"
+                ],
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
