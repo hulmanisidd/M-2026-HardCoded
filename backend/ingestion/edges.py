@@ -99,6 +99,12 @@ class _Builder:
         self.roles = {r.arn: r for r in account.roles}
         self.trust: dict[str, tuple[Statement, ...]] = {}
 
+        if account.duplicate_arns:
+            self.warnings.append(
+                "duplicate entries in the dump were ignored (first copy kept): "
+                + ", ".join(sorted(set(account.duplicate_arns)))
+            )
+
         for policy in account.policies:
             self.managed[policy.arn] = self._parse(policy.default_document(), policy.arn)
         for role in account.roles:
