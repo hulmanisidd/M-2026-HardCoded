@@ -137,3 +137,52 @@ def test_notifying_repository_forwards_every_write_to_the_coordinator():
     assert len(coord.dependency_index) == 2
     watched.upsert_entity(entity("lonely"))
     assert index_matches_fresh(coord, repo, ["a"], ["c"])
+
+def test_failed_event_is_not_accepted_when_applier_raises():
+    repo, edges = chain_repo("a", "b", "c")
+    status = StatusTracker()
+    coord = UpdateCoordinator(repo.snapshot, ["a"], ["c"], status=status)
+    coord.initialize()
+
+    calls = {"count": 0}
+
+    def failing_applier(event):
+        calls["count"] += 1
+        if calls["count"] == 1:
+            raise RuntimeError("simulated graph update failure")
+        return [repo.invalidate_edge(edges[0].edge_id)]
+
+    intake = EventIntake(coord, failing_applier, status=status)
+    event = ev("e-failure", edges[0].edge_id)
+
+    failed = intake.handle_event(event)
+
+    assert failed.accepted is False
+    assert failed.reason == "apply_failed"
+    assert "simulated graph update failure" in failed.error
+    assert status.source_status("cloudtrail").state.value == "failed"
+
+    # The same event ID must be retryable after failure.
+    retried = intake.handle_event(event)
+
+    assert retried.accepted is True
+    assert retried.reason == "applied"
+    assert calls["count"] == 2
+
+def test_failed_event_after_graph_write_does_not_report_success():
+    repo, edges = chain_repo("a", "b", "c")
+    coord = UpdateCoordinator(repo.snapshot, ["a"], ["c"])
+    coord.initialize()
+
+    def partially_failing_applier(event):
+        repo.invalidate_edge(edges[0].edge_id)
+        raise RuntimeError("failure after graph write")
+
+    intake = EventIntake(coord, partially_failing_applier)
+    before = repo.get_edge(edges[0].edge_id)
+
+    out = intake.handle_event(ev("e-partial", edges[0].edge_id))
+
+    assert out.accepted is False
+    assert out.reason == "apply_failed"
+    assert repo.get_edge(edges[0].edge_id) != before

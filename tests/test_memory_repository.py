@@ -56,12 +56,45 @@ def test_snapshot_version_is_stable_and_content_based():
     assert a.snapshot().version != b.snapshot().version
 
 
-def test_edge_with_unknown_endpoint_is_rejected():
+
+def test_edge_with_unknown_endpoint_is_rejected_without_partial_write():
     repo = make_repo()
-    bad = Relationship(source_id="user-a", target_id="ghost",
-                       relation_type=RelationType.CAN_READ)
+    bad = Relationship(
+        source_id="user-a",
+        target_id="ghost",
+        relation_type=RelationType.CAN_READ,
+    )
+
+    edges_before = repo.snapshot().edges
+
     with pytest.raises(ValueError):
         repo.upsert_edge(bad)
+
+    # The rejected edge must not have been stored.
+    assert repo.get_edge(bad.edge_id) is None
+    assert repo.snapshot().edges == edges_before
+
+
+def test_edge_can_be_retried_after_missing_endpoint_is_added():
+    repo = make_repo()
+    bad = Relationship(
+        source_id="user-a",
+        target_id="ghost",
+        relation_type=RelationType.CAN_READ,
+    )
+
+    with pytest.raises(ValueError):
+        repo.upsert_edge(bad)
+
+    # Add the missing endpoint and retry the same edge.
+    repo.upsert_entity(
+        Entity(entity_id="ghost", entity_type=NodeType.S3_BUCKET, name="ghost")
+    )
+    change = repo.upsert_edge(bad)
+
+    assert change.changed is True
+    assert repo.get_edge(bad.edge_id) == bad
+
 
 
 def test_invalidate_unknown_edge_raises():
