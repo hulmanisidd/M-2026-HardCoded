@@ -123,17 +123,34 @@ export const bestLikelihood = (paths: AttackPath[]): number | null => {
 export const fmtScore = (x: number | null) => (x === null ? 'unknown' : x.toFixed(2))
 export const relLabel = (r: string) => r.replace(/_/g, ' ')
 
+const stepsOf = (text: string, re: RegExp) => {
+  const hit = re.exec(text)
+  return hit ? hit[1].split('->').map((s) => s.trim()) : []
+}
 
-export function backupsForFix(m: Model, fix: Fix): Overlay[] {
-  return m.backups.filter(
-    (backup) => !backup.edge_ids.some((id) => fix.edge_ids.includes(id)),
+// True when the route passes through one of the fix's cut edges.
+const crosses = (m: Model, fix: Fix, steps: string[]) =>
+  fix.edge_ids.some((id) => {
+    const e = m.edgeById.get(id)
+    if (!e) return false
+    const a = nameOf(m, e.source_id)
+    const b = nameOf(m, e.target_id)
+    return steps.some((s, i) => s === a && steps[i + 1] === b)
+  })
+
+/** Backup routes that replace a primary route this fix cuts. */
+export const backupsForFix = (m: Model, fix: Fix): Overlay[] =>
+  m.backups.filter(
+    (b) =>
+      !b.edge_ids.some((id) => fix.edge_ids.includes(id)) &&
+      crosses(m, fix, stepsOf(b.note, /Replaces:\s*([^.]*)\./)),
   )
-}
 
-export function lostForFix(m: Model, _fix: Fix): Overlay[] {
-  return m.accessLost
-}
+/** Access this fix would break with no verified backup. */
+export const lostForFix = (m: Model, fix: Fix): Overlay[] =>
+  m.accessLost.filter((a) =>
+    crosses(m, fix, stepsOf(a.note, /primary route \(([^)]*)\)/)),
+  )
 
-export function routeText(route: Overlay): string {
-  return route.label.replace(/^Backup \| /, '')
-}
+export const routeText = (o: Overlay) =>
+  /Route:\s*([^.]*)\./.exec(o.note)?.[1]?.trim() ?? o.label
