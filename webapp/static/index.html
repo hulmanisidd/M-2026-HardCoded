@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HardCoded – Attack-Path Graph</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+</head><body>
+<aside>
+<h1 id="ttl">Attack-path graph</h1>
+<p class="sub" id="sub">Synthetic AWS org · edges are <i>possible</i> paths under the model, not proof.</p>
+<h2>Scenario</h2>
+<select id="scenario" aria-label="Scenario" disabled></select>
+<label id="failRow" class="chk" hidden><input type="checkbox" id="fail"> simulate failed collection</label>
+<h2>Paths (click to highlight)</h2>
+<button id="clear" type="button">Show all</button>
+<div id="paths"></div>
+<h2>Edge status</h2><div id="legE"></div>
+<h2>Node criticality</h2><div id="legN"></div>
+</aside>
+<main>
+<svg id="svg" role="img" aria-label="Attack-path graph"></svg>
+<div id="state" class="state" hidden></div>
+</main>
+<div id="tip"></div>
+<script src="app.js"></script>
+</body></html>
