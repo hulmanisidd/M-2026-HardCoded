@@ -9,7 +9,7 @@ care about the ones the attack-path graph needs.
 """
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class _Raw(BaseModel):
@@ -94,8 +94,44 @@ class RawManagedPolicy(_Raw):
         return None
 
 
+_LIST_KEYS = ("UserDetailList", "GroupDetailList", "RoleDetailList", "Policies")
+
+
 class RawIamAccount(_Raw):
     users: tuple[RawUser, ...] = Field(default=(), alias="UserDetailList")
     groups: tuple[RawGroup, ...] = Field(default=(), alias="GroupDetailList")
     roles: tuple[RawRole, ...] = Field(default=(), alias="RoleDetailList")
     policies: tuple[RawManagedPolicy, ...] = Field(default=(), alias="Policies")
+    # ARNs that appeared more than once in the dump. Filled in by the
+    # validator below; the later copies are dropped.
+    duplicate_arns: tuple[str, ...] = Field(default=(), alias="DuplicateArns")
+
+    @model_validator(mode="before")
+    @classmethod
+    def _drop_duplicate_arns(cls, data):
+        """Keep the first copy of anything listed twice.
+
+        A real dump can repeat an item (for example when pages overlap while
+        the account is changing). Two copies would give two entities with the
+        same id, which GraphSnapshot rejects. Doing this once, here, keeps the
+        entities and the edges built from them consistent.
+        """
+        if not isinstance(data, dict):
+            return data
+        data = dict(data)
+        dropped: list[str] = []
+        for key in _LIST_KEYS:
+            seen: set[str] = set()
+            kept = []
+            for item in data.get(key) or []:
+                arn = item.get("Arn") if isinstance(item, dict) else None
+                if arn is not None and arn in seen:
+                    dropped.append(arn)
+                    continue
+                if arn is not None:
+                    seen.add(arn)
+                kept.append(item)
+            if key in data:
+                data[key] = kept
+        data["DuplicateArns"] = tuple(dropped)
+        return data
