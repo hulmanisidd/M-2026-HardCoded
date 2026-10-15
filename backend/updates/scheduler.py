@@ -33,22 +33,32 @@ class ReconciliationScheduler:
         self.last_result: ReconciliationResult | None = None
         self.last_error: str | None = None
         self.runs = 0
-
+    
     def due(self, now: datetime | None = None) -> bool:
         now = now or self._clock()
-        return self._last_run is None or now - self._last_run >= self._interval
+
+        if self._last_run is None:
+            return True
+
+        if now < self._last_run:
+            return False
+
+        return now - self._last_run >= self._interval
 
     def tick(self, now: datetime | None = None) -> ReconciliationResult | None:
-        """Run a reconciliation if one is due. Never raises.
-
-        A failed run is remembered in `last_error` and retried after the normal
-        interval (no hot retry loop).
-        """
         now = now or self._clock()
+
+        # Handle the clock moving backwards.
+        if self._last_run is not None and now < self._last_run:
+            self._last_run = now
+            return None
+
         if not self.due(now):
             return None
+
         self._last_run = now
         self.runs += 1
+
         try:
             self.last_result = self._reconcile()
             self.last_error = None
@@ -56,6 +66,43 @@ class ReconciliationScheduler:
         except Exception as exc:
             self.last_error = f"{type(exc).__name__}: {exc}"
             return None
+
+    
+def due(self, now: datetime | None = None) -> bool:
+    now = now or self._clock()
+
+    if self._last_run is None:
+        return True
+
+    # Don't run early if the clock moves backwards.
+    if now < self._last_run:
+        return False
+
+    return now - self._last_run >= self._interval
+
+
+def tick(self, now: datetime | None = None) -> ReconciliationResult | None:
+    """Run reconciliation when due; remember failures without raising."""
+    now = now or self._clock()
+
+    # Reset the time reference after a backward clock adjustment.
+    if self._last_run is not None and now < self._last_run:
+        self._last_run = now
+        return None
+
+    if not self.due(now):
+        return None
+
+    self._last_run = now
+    self.runs += 1
+
+    try:
+        self.last_result = self._reconcile()
+        self.last_error = None
+        return self.last_result
+    except Exception as exc:
+        self.last_error = f"{type(exc).__name__}: {exc}"
+        return None
 
     def start_background(
         self, poll_seconds: float = 1.0
