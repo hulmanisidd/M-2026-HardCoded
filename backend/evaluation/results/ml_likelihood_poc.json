@@ -1,0 +1,243 @@
+{
+  "disclaimer": "SYNTHETIC proof-of-concept data. Labels come from assumed coefficients, not real attack outcomes. Not evidence of real-world attack probability.",
+  "dataset": {
+    "seed": 0,
+    "intercept_shift": 0.0,
+    "n": 6000,
+    "generator_version": "synthetic-v1",
+    "base_rate": 0.281,
+    "disclaimer": "SYNTHETIC proof-of-concept data. Labels come from assumed coefficients, not real attack outcomes. Not evidence of real-world attack probability."
+  },
+  "split_sizes": {
+    "train": 3600,
+    "calibration": 1200,
+    "test": 1200
+  },
+  "chosen_C": 0.1,
+  "cv_log_loss_by_C": {
+    "0.01": 0.5172818800981169,
+    "0.1": 0.5151997075528671,
+    "1.0": 0.515279559797387,
+    "10.0": 0.5152996818016622
+  },
+  "test_metrics": {
+    "baseline_constant_base_rate": {
+      "roc_auc": 0.5,
+      "pr_auc": 0.2808333333333333,
+      "log_loss": 0.5937388384447678,
+      "brier": 0.201966049382716,
+      "ece": 0.0002777777777777657
+    },
+    "rule_based_P4_ranking_only": {
+      "roc_auc": 0.7290660211600551,
+      "pr_auc": 0.48034400814659484,
+      "note": "not a probability; log loss/Brier/ECE intentionally omitted"
+    },
+    "logreg_uncalibrated": {
+      "roc_auc": 0.7446730231646559,
+      "pr_auc": 0.537981859002769,
+      "log_loss": 0.5134376688405389,
+      "brier": 0.17084821300713537,
+      "ece": 0.03218527571913575
+    },
+    "logreg_platt": {
+      "roc_auc": 0.7446730231646559,
+      "pr_auc": 0.537981859002769,
+      "log_loss": 0.513133264673161,
+      "brier": 0.17078807694287648,
+      "ece": 0.029482183091176114
+    },
+    "logreg_isotonic": {
+      "roc_auc": 0.7388345809078124,
+      "pr_auc": 0.5016378738095885,
+      "log_loss": 0.5276912622145004,
+      "brier": 0.1728899728883598,
+      "ece": 0.03520402848806284
+    }
+  },
+  "bootstrap_95ci_platt": {
+    "roc_auc": [
+      0.7095190868373019,
+      0.781035409785702
+    ],
+    "brier": [
+      0.1587152700585904,
+      0.18210399452043782
+    ]
+  },
+  "reliability_platt_test": [
+    {
+      "bin": "0.0-0.1",
+      "n": 225,
+      "mean_predicted": 0.055,
+      "observed_rate": 0.071
+    },
+    {
+      "bin": "0.1-0.2",
+      "n": 262,
+      "mean_predicted": 0.146,
+      "observed_rate": 0.176
+    },
+    {
+      "bin": "0.2-0.3",
+      "n": 215,
+      "mean_predicted": 0.247,
+      "observed_rate": 0.237
+    },
+    {
+      "bin": "0.3-0.4",
+      "n": 177,
+      "mean_predicted": 0.346,
+      "observed_rate": 0.339
+    },
+    {
+      "bin": "0.4-0.5",
+      "n": 159,
+      "mean_predicted": 0.447,
+      "observed_rate": 0.377
+    },
+    {
+      "bin": "0.5-0.6",
+      "n": 101,
+      "mean_predicted": 0.549,
+      "observed_rate": 0.584
+    },
+    {
+      "bin": "0.6-0.7",
+      "n": 52,
+      "mean_predicted": 0.64,
+      "observed_rate": 0.75
+    },
+    {
+      "bin": "0.7-0.8",
+      "n": 9,
+      "mean_predicted": 0.729,
+      "observed_rate": 0.667
+    }
+  ],
+  "reliability_uncalibrated_test": [
+    {
+      "bin": "0.0-0.1",
+      "n": 233,
+      "mean_predicted": 0.055,
+      "observed_rate": 0.069
+    },
+    {
+      "bin": "0.1-0.2",
+      "n": 272,
+      "mean_predicted": 0.146,
+      "observed_rate": 0.176
+    },
+    {
+      "bin": "0.2-0.3",
+      "n": 215,
+      "mean_predicted": 0.248,
+      "observed_rate": 0.265
+    },
+    {
+      "bin": "0.3-0.4",
+      "n": 177,
+      "mean_predicted": 0.347,
+      "observed_rate": 0.339
+    },
+    {
+      "bin": "0.4-0.5",
+      "n": 157,
+      "mean_predicted": 0.448,
+      "observed_rate": 0.382
+    },
+    {
+      "bin": "0.5-0.6",
+      "n": 92,
+      "mean_predicted": 0.551,
+      "observed_rate": 0.609
+    },
+    {
+      "bin": "0.6-0.7",
+      "n": 46,
+      "mean_predicted": 0.637,
+      "observed_rate": 0.761
+    },
+    {
+      "bin": "0.7-0.8",
+      "n": 8,
+      "mean_predicted": 0.724,
+      "observed_rate": 0.625
+    }
+  ],
+  "cv5_roc_auc_mean_std": [
+    0.7455989190695244,
+    0.020472988333628966
+  ],
+  "prior_shift_platt": {
+    "shift_-1.0": {
+      "roc_auc": 0.7531037915120804,
+      "pr_auc": 0.3275942692162017,
+      "log_loss": 0.4237806332015345,
+      "brier": 0.13520441444390932,
+      "ece": 0.14247480729976275,
+      "observed_base_rate": 0.14333333333333334,
+      "mean_predicted": 0.2858081406330961
+    },
+    "shift_+0.0": {
+      "roc_auc": 0.7473585019257846,
+      "pr_auc": 0.5098831119816655,
+      "log_loss": 0.5113215378877028,
+      "brier": 0.17085254735876684,
+      "ece": 0.009829940867759334,
+      "observed_base_rate": 0.279,
+      "mean_predicted": 0.2858081406330961
+    },
+    "shift_+1.0": {
+      "roc_auc": 0.758074608395729,
+      "pr_auc": 0.6943437665214959,
+      "log_loss": 0.6461904109328648,
+      "brier": 0.22549294474277734,
+      "ece": 0.15785852603357056,
+      "observed_base_rate": 0.44366666666666665,
+      "mean_predicted": 0.2858081406330961
+    }
+  },
+  "top_coefficients_standardised": [
+    [
+      "n_conditioned",
+      -0.603
+    ],
+    [
+      "n_stale",
+      -0.357
+    ],
+    [
+      "target_criticality",
+      0.276
+    ],
+    [
+      "n_rel_runs_as",
+      -0.272
+    ],
+    [
+      "n_inferred",
+      -0.264
+    ],
+    [
+      "n_confirmed",
+      0.19
+    ],
+    [
+      "hops",
+      -0.17
+    ],
+    [
+      "n_rel_can_modify_policy",
+      0.146
+    ],
+    [
+      "n_rel_can_assume",
+      -0.141
+    ],
+    [
+      "mean_evidence_per_edge",
+      0.133
+    ]
+  ]
+}
