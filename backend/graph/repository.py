@@ -1,5 +1,6 @@
 """The only door into the graph. In-memory and Neo4j both implement this."""
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from datetime import datetime
 
 from contracts import Entity, GraphSnapshot, Relationship
@@ -39,7 +40,9 @@ class GraphRepository(ABC):
 
         source_api records which collector reported the edge, so a failed
         collection can mark its scope UNKNOWN. Omitted -> keep what we have.
-        A fresh observation of an UNKNOWN edge clears the UNKNOWN."""
+        A fresh observation of an UNKNOWN edge clears the UNKNOWN. A write
+        without observed_at to an UNKNOWN edge is ignored (changed=False)
+        unless the write is itself UNKNOWN or INVALIDATED."""
 
     @abstractmethod
     def invalidate_edge(self, edge_id: str, *, at: datetime | None = None) -> GraphChange:
@@ -56,7 +59,9 @@ class GraphRepository(ABC):
         was reported by scope.source_api and whose source entity is in
         scope.account_id becomes UNKNOWN, except INVALIDATED edges. Edges whose
         latest event is not older than `at` are skipped (the failure report is
-        stale for them). UNKNOWN is cleared only by a newer observation."""
+        stale for them). Edges with no observed_at (seed / direct writes)
+        are never marked UNKNOWN. UNKNOWN is cleared only by a newer
+        observation."""
 
     @abstractmethod
     def get_entity(self, entity_id: str) -> Entity | None: ...
@@ -75,3 +80,8 @@ class GraphRepository(ABC):
         """Immutable, versioned view. Same content -> same version string.
         Confirmed/inferred edges older than the freshness window at
         created_at are returned as STALE."""
+
+    @abstractmethod
+    def subscribe(self, callback: Callable[[GraphChange], None]) -> None:
+        """Call callback(change) after every write that changed the graph
+        (changed=True). Replays and ignored writes do not notify."""
