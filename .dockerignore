@@ -21,7 +21,6 @@ graph_template.html
 graph_live.html
 build_live_graph.py
 export_neo4j.py
-export_neo4j_green.py
 load_seed_to_neo4j.py
 requirements-dev.txt
 pytest.ini
@@ -30,4 +29,3 @@ fixtures/organization.zip
 fixtures/raw_events
 fixtures/ground_truth
 fixtures/expected_results
-fixtures/organization/access
