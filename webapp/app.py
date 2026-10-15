@@ -71,9 +71,7 @@ def _allowed(ip: str) -> bool:
         return True
 
 
-CSP = ("default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; "
-       "img-src 'self' data:; connect-src 'self'; object-src 'none'; base-uri 'none'; "
-       "form-action 'none'; frame-ancestors 'none'")
+CSP = ("default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 
 app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)  # no public API docs
 
