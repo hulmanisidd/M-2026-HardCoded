@@ -1,0 +1,620 @@
+{
+  "UserDetailList": [
+    {
+      "Path": "/",
+      "UserName": "dana-ops",
+      "UserId": "AIDADANAOPS",
+      "Arn": "arn:aws:iam::111122223333:user/dana-ops",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "OpsAdminWithMFA",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": "arn:aws:iam::111122223333:role/ops-admin-mfa",
+                "Condition": {
+                  "Bool": {
+                    "aws:MultiFactorAuthPresent": "true"
+                  }
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "fred-denied",
+      "UserId": "AIDAFREDDENIED",
+      "Arn": "arn:aws:iam::111122223333:user/fred-denied",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "AssumeAnyButVault",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": "arn:aws:iam::111122223333:role/*"
+              },
+              {
+                "Effect": "Deny",
+                "Action": "sts:AssumeRole",
+                "Resource": "arn:aws:iam::111122223333:role/vault-admin"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "hana-bounded",
+      "UserId": "AIDAHANABOUNDED",
+      "Arn": "arn:aws:iam::111122223333:user/hana-bounded",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "AssumeBoundaryAdmin",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": "arn:aws:iam::111122223333:role/boundary-admin"
+              }
+            ]
+          }
+        }
+      ],
+      "PermissionsBoundary": {
+        "PermissionsBoundaryType": "Policy",
+        "PermissionsBoundaryArn": "arn:aws:iam::111122223333:policy/CorpBoundary"
+      }
+    },
+    {
+      "Path": "/",
+      "UserName": "chain-carl",
+      "UserId": "AIDACHAINCARL",
+      "Arn": "arn:aws:iam::111122223333:user/chain-carl",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "StartChain",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": "arn:aws:iam::111122223333:role/hop-1"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "kim-vendor",
+      "UserId": "AIDAKIMVENDOR",
+      "Arn": "arn:aws:iam::111122223333:user/kim-vendor",
+      "GroupList": [
+        "external-vendors"
+      ],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": []
+    },
+    {
+      "Path": "/",
+      "UserName": "pat-platform",
+      "UserId": "AIDAPATPLATFORM",
+      "Arn": "arn:aws:iam::111122223333:user/pat-platform",
+      "GroupList": [
+        "platform"
+      ],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": []
+    },
+    {
+      "Path": "/",
+      "UserName": "lena-locked",
+      "UserId": "AIDALENALOCKED",
+      "Arn": "arn:aws:iam::111122223333:user/lena-locked",
+      "GroupList": [],
+      "AttachedManagedPolicies": [],
+      "UserPolicyList": [
+        {
+          "PolicyName": "TryLocked",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": "arn:aws:iam::111122223333:role/locked-admin"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "UserName": "zed-safe",
+      "UserId": "AIDAZEDSAFE",
+      "Arn": "arn:aws:iam::111122223333:user/zed-safe",
+      "GroupList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "ReadOnlyAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/ReadOnlyAccess"
+        }
+      ],
+      "UserPolicyList": []
+    }
+  ],
+  "GroupDetailList": [
+    {
+      "Path": "/",
+      "GroupName": "external-vendors",
+      "GroupId": "AGPAEXTERNALVENDORS",
+      "Arn": "arn:aws:iam::111122223333:group/external-vendors",
+      "GroupPolicyList": [
+        {
+          "PolicyName": "AssumePortal",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": "arn:aws:iam::111122223333:role/vendor-portal"
+              }
+            ]
+          }
+        }
+      ],
+      "AttachedManagedPolicies": []
+    },
+    {
+      "Path": "/",
+      "GroupName": "platform",
+      "GroupId": "AGPAPLATFORM",
+      "Arn": "arn:aws:iam::111122223333:group/platform",
+      "GroupPolicyList": [
+        {
+          "PolicyName": "ManageOps",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "iam:AttachRolePolicy",
+                "Resource": "arn:aws:iam::111122223333:role/ops-admin-mfa"
+              }
+            ]
+          }
+        }
+      ],
+      "AttachedManagedPolicies": []
+    }
+  ],
+  "RoleDetailList": [
+    {
+      "Path": "/",
+      "RoleName": "ops-admin-mfa",
+      "RoleId": "AROAOPSADMINMFA",
+      "Arn": "arn:aws:iam::111122223333:role/ops-admin-mfa",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "vault-admin",
+      "RoleId": "AROAVAULTADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/vault-admin",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "report-role",
+      "RoleId": "AROAREPORTROLE",
+      "Arn": "arn:aws:iam::111122223333:role/report-role",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "ReadOnlyAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/ReadOnlyAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "boundary-admin",
+      "RoleId": "AROABOUNDARYADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/boundary-admin",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "hop-1",
+      "RoleId": "AROAHOP1",
+      "Arn": "arn:aws:iam::111122223333:role/hop-1",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:user/chain-carl"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [
+        {
+          "PolicyName": "ToHop2",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": "arn:aws:iam::111122223333:role/hop-2"
+              }
+            ]
+          }
+        }
+      ],
+      "AttachedManagedPolicies": []
+    },
+    {
+      "Path": "/",
+      "RoleName": "hop-2",
+      "RoleId": "AROAHOP2",
+      "Arn": "arn:aws:iam::111122223333:role/hop-2",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:role/hop-1"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [
+        {
+          "PolicyName": "ToHop3",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": "arn:aws:iam::111122223333:role/hop-3"
+              }
+            ]
+          }
+        }
+      ],
+      "AttachedManagedPolicies": []
+    },
+    {
+      "Path": "/",
+      "RoleName": "hop-3",
+      "RoleId": "AROAHOP3",
+      "Arn": "arn:aws:iam::111122223333:role/hop-3",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:role/hop-2"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [
+        {
+          "PolicyName": "ToChainAdmin",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "sts:AssumeRole",
+                "Resource": "arn:aws:iam::111122223333:role/chain-admin"
+              }
+            ]
+          }
+        }
+      ],
+      "AttachedManagedPolicies": []
+    },
+    {
+      "Path": "/",
+      "RoleName": "chain-admin",
+      "RoleId": "AROACHAINADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/chain-admin",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:role/hop-3"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "vendor-portal",
+      "RoleId": "AROAVENDORPORTAL",
+      "Arn": "arn:aws:iam::111122223333:role/vendor-portal",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [
+        {
+          "PolicyName": "RunTasks",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "iam:PassRole",
+                "Resource": "arn:aws:iam::111122223333:role/ecs-task-admin"
+              },
+              {
+                "Effect": "Allow",
+                "Action": "ecs:RunTask",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "ReadOnlyAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/ReadOnlyAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "ecs-task-admin",
+      "RoleId": "AROAECSTASKADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/ecs-task-admin",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Service": "ecs-tasks.amazonaws.com"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    },
+    {
+      "Path": "/",
+      "RoleName": "locked-admin",
+      "RoleId": "AROALOCKEDADMIN",
+      "Arn": "arn:aws:iam::111122223333:role/locked-admin",
+      "AssumeRolePolicyDocument": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:root"
+            },
+            "Action": "sts:AssumeRole"
+          },
+          {
+            "Effect": "Deny",
+            "Principal": {
+              "AWS": "arn:aws:iam::111122223333:user/lena-locked"
+            },
+            "Action": "sts:AssumeRole"
+          }
+        ]
+      },
+      "RolePolicyList": [],
+      "AttachedManagedPolicies": [
+        {
+          "PolicyName": "AdministratorAccess",
+          "PolicyArn": "arn:aws:iam::aws:policy/AdministratorAccess"
+        }
+      ]
+    }
+  ],
+  "Policies": [
+    {
+      "PolicyName": "AdministratorAccess",
+      "PolicyId": "ANPAADMINISTRATORACCESS",
+      "Arn": "arn:aws:iam::aws:policy/AdministratorAccess",
+      "PolicyVersionList": [
+        {
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": "*",
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "PolicyName": "ReadOnlyAccess",
+      "PolicyId": "ANPAREADONLYACCESS",
+      "Arn": "arn:aws:iam::aws:policy/ReadOnlyAccess",
+      "PolicyVersionList": [
+        {
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "s3:Get*",
+                  "s3:List*",
+                  "ec2:Describe*",
+                  "iam:Get*",
+                  "iam:List*",
+                  "logs:Get*"
+                ],
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "PolicyName": "CorpBoundary",
+      "PolicyId": "ANPACORPBOUNDARY",
+      "Arn": "arn:aws:iam::111122223333:policy/CorpBoundary",
+      "PolicyVersionList": [
+        {
+          "VersionId": "v1",
+          "IsDefaultVersion": true,
+          "Document": {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                  "s3:*",
+                  "sts:AssumeRole"
+                ],
+                "Resource": "*"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
