@@ -20,7 +20,13 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, Iterable
 
+from functools import lru_cache
 
+@lru_cache(maxsize=None)
+def _wildcard_regex(pattern: str, ignore_case: bool) -> re.Pattern[str]:
+    pattern = _VARIABLE.sub("*", pattern)
+    body = re.escape(pattern).replace(r"\*", ".*").replace(r"\?", ".")
+    return re.compile(f"^{body}$", re.IGNORECASE if ignore_case else 0)
 class PolicyParseError(ValueError):
     """The policy document is malformed. We fail loudly instead of guessing."""
 

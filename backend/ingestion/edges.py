@@ -27,11 +27,10 @@ Known gaps (not modelled yet): permission boundaries (only flagged), SCPs, resou
 policies, cross-account trust, invoking/triggering a launched service, and
 non-IAM resource edges (S3, KMS, Secrets).
 """
-from dataclasses import dataclass
+from dataclasses import dataclass,field
 
 from contracts.relationships import EdgeStatus, Relationship
 from contracts.vocab import RelationType
-
 from .normalizer import account_id_from_arn, inline_policy_id
 from .policy import (
     Decision,
@@ -41,6 +40,7 @@ from .policy import (
     action_matches,
     evaluate,
     parse_policy_document,
+    resource_matches,
 )
 from .raw_models import RawIamAccount, RawUser
 from .trust import TrustMatch, trust_allows_principal, trust_allows_service
@@ -78,10 +78,18 @@ class EdgeBuildResult:
 
 @dataclass
 class _Identity:
-    """All identity-policy statements that apply to one principal."""
-
     statements: list[Statement]
-    owner_of: dict[int, str]  # id(statement) -> policy entity id
+    owner_of: dict[int, str]
+    _by_action: dict = field(default_factory=dict, repr=False)
+
+    def for_action(self, action: str) -> "_Identity":
+        """Only the statements whose Action/NotAction could apply to `action` (cached)."""
+        cached = self._by_action.get(action)
+        if cached is None:
+            cached = _Identity([s for s in self.statements if action_matches(s, action)],
+                               self.owner_of)
+            self._by_action[action] = cached
+        return cached
 
     def evidence(self, result) -> tuple[str, ...]:
         found = {self.owner_of[id(s)] for s in result.matched_statements if id(s) in self.owner_of}
@@ -98,6 +106,49 @@ class _Builder:
         self.groups = {g.group_name: g for g in account.groups}
         self.roles = {r.arn: r for r in account.roles}
         self.trust: dict[str, tuple[Statement, ...]] = {}
+
+        if account.duplicate_arns:
+            self.warnings.append(
+                "duplicate entries in the dump were ignored (first copy kept): "
+                + ", ".join(sorted(set(account.duplicate_arns)))
+            )
+
+        for policy in account.policies:
+            self.managed[policy.arn] = self._parse(policy.default_document(), policy.arn)
+        for role in account.roles:
+            self.trust[role.arn] = self._parse(role.trust_policy, f"{role.arn} (trust policy)")
+
+        # Everything below needs self.trust to be filled, so it must stay last.
+        self._modify_targets = (
+            [("user", u.arn) for u in account.users]
+            + [("group", g.arn) for g in account.groups]
+            + [("role", r.arn) for r in account.roles]
+            + [("policy", p.arn) for p in account.policies]
+        )
+
+        # Roles whose trust policy could trust a caller directly (exact ARN, "*", or NotPrincipal).
+        self._direct_any: list = []
+        self._direct_by_arn: dict[str, list] = {}
+        for role in account.roles:
+            for s in self.trust[role.arn]:
+                if s.effect is not Effect.ALLOW or not action_matches(s, ASSUME_ROLE):
+                    continue
+                aws = s.principals.get("AWS", ())
+                if s.not_principals or "*" in aws:
+                    self._direct_any.append(role)
+                    break
+                for p in aws:
+                    self._direct_by_arn.setdefault(p, []).append(role)
+        for role in account.roles:
+            for s in self.trust[role.arn]:
+                if s.effect is not Effect.ALLOW or not action_matches(s, ASSUME_ROLE):
+                    continue
+                aws = s.principals.get("AWS", ())
+                if s.not_principals or "*" in aws:
+                    self._direct_any.append(role)
+                    break
+                for p in aws:
+                    self._direct_by_arn.setdefault(p, []).append(role)
 
         if account.duplicate_arns:
             self.warnings.append(
@@ -191,13 +242,13 @@ class _Builder:
 
     def _assume_edges(self, principal, identity: _Identity):
         account_id = account_id_from_arn(principal.arn)
-        for role in self.account.roles:
+        for role in self._assume_candidates(principal, identity):
             if role.arn == principal.arn or account_id_from_arn(role.arn) != account_id:
                 continue
             trust = trust_allows_principal(self.trust[role.arn], principal.arn, account_id)
             if not trust.trusted:
                 continue
-            ident = evaluate(identity.statements, ASSUME_ROLE, role.arn)
+            ident = evaluate(identity.for_action(ASSUME_ROLE).statements, ASSUME_ROLE, role.arn)
             if ident.decision is Decision.DENY:
                 continue
             if trust.match is TrustMatch.ACCOUNT_DELEGATED and not ident.allowed:
@@ -214,10 +265,13 @@ class _Builder:
 
     def _pass_role_edges(self, principal, identity: _Identity):
         account_id = account_id_from_arn(principal.arn)
+        pass_identity = identity.for_action(PASS_ROLE)
+        if not pass_identity.statements:
+            return
         for role in self.account.roles:
             if account_id_from_arn(role.arn) != account_id:
                 continue
-            passed = evaluate(identity.statements, PASS_ROLE, role.arn)
+            passed = evaluate(pass_identity.statements, PASS_ROLE, role.arn)
             if not passed.allowed:
                 continue
             for service, launch_actions in SERVICE_LAUNCH_ACTIONS.items():
@@ -238,6 +292,23 @@ class _Builder:
                     conditions, (role.arn, *identity.evidence(passed), *launch[3]),
                 )
                 break  # one edge per (principal, role) is enough
+    def _assume_candidates(self, principal, identity: _Identity):
+        found = {r.arn: r for r in self._direct_any}
+        for r in self._direct_by_arn.get(principal.arn, ()):
+            found[r.arn] = r
+        for s in identity.for_action(ASSUME_ROLE).statements:
+            if s.effect is not Effect.ALLOW:
+                continue
+            if s.not_resources or any(c in p for p in s.resources for c in "*?$"):
+                for r in self.account.roles:        # wildcard statement: scan once per statement
+                    if resource_matches(s, r.arn):
+                        found[r.arn] = r
+            else:
+                for p in s.resources:               # exact ARN: direct lookup
+                    r = self.roles.get(p)
+                    if r is not None:
+                        found[r.arn] = r
+        return found.values()
 
     @staticmethod
     def _launch(identity: _Identity, actions: tuple[str, ...]):
@@ -257,17 +328,19 @@ class _Builder:
 
     def _modify_edges(self, principal, identity: _Identity):
         account_id = account_id_from_arn(principal.arn)
-        targets = (
-            [("user", u.arn) for u in self.account.users]
-            + [("group", g.arn) for g in self.account.groups]
-            + [("role", r.arn) for r in self.account.roles]
-            + [("policy", p.arn) for p in self.account.policies]
-        )
-        for kind, arn in targets:
-            if account_id_from_arn(arn) != account_id:
-                continue  # AWS-managed policies cannot be modified
-            for action in MODIFY_ACTIONS[kind]:
-                result = evaluate(identity.statements, action, arn)
+        live_by_kind = {}
+        for kind, actions in MODIFY_ACTIONS.items():
+            live = [a for a in actions if identity.for_action(a).statements]
+            if live:
+                live_by_kind[kind] = live
+        if not live_by_kind:
+            return  # nothing in this principal's policies can modify anything
+        for kind, arn in self._modify_targets:
+            live = live_by_kind.get(kind)
+            if not live or account_id_from_arn(arn) != account_id:
+                continue
+            for action in live:
+                result = evaluate(identity.for_action(action).statements, action, arn)
                 if result.allowed:
                     unevaluated = _boundary_flag(principal)
                     if result.conditional:
